@@ -11,7 +11,13 @@ from scipy.special import lambertw
 def extract_diode_model_parameters(measurements_fname='data.json'):
     """Extract diode model parameters from JSON file with measurements.
     
-
+    Structure of imported JSON File:
+    Dict:
+        meas_run(run_name, data) (tuple(string, dict)): Measurement run
+        run_name (string): Name of test run, e.g. "T298.0K"
+        data[phys_quantity: values] (dict[string: list]): 
+        Dictionary of diode capacitance ('C_CA'),
+        current ('I_C) and voltage ('V_CA') values
     Args:
         measurements_fname (string): File name of a JSON file 
         
@@ -22,8 +28,13 @@ def extract_diode_model_parameters(measurements_fname='data.json'):
         measurements = json.load(myfile)
     
     #TODO Guarantee correct order of dict entries for Python < 3.7      
-    for temperature in measurements.items():
-        plot_voltage_sweep(temperature)
+    for measurement in measurements.items():
+        v_ca = measurement[1]['V_CA'][:]
+        i_c = measurement[1]['I_C'][:] 
+        c_ca =  measurement[1]['C_CA'][:]
+        T = float(measurement[0][1:5])     # e.g. meas_run[0] = "T298.0K"
+        plot_vca_ic(v_ca, i_c, T)
+        # plot_vca_cca(v_ca, c_ca, T)
       
       
 def crop_data_range_to_x(xdata, ydata, lower, upper):
@@ -165,7 +176,7 @@ def i_c_eq_d_r(v_ca, i_s, m, T, r):
     return i_c
 
 
-def ideal_diode_model(name, v_ca, i_c, vca_lim_lower=0.65,     
+def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,     
                           vca_lim_upper=0.8, T=298.0):
     """Calculate a best fit model for the Shockley Diode equation
 
@@ -199,29 +210,25 @@ def ideal_diode_model(name, v_ca, i_c, vca_lim_lower=0.65,
     for i in range(len(i_c_model)):
         i_c_model[i] = np.exp(diode_eq_T(v_ca[i], np.log(i_s), m)) 
         
-    print('Model parameters for ', name, ': I_S =', i_s, 'm =', m)
+    print('Model parameters for T = ' + str("{:.1g}".format(T)), 'K: I_S = ' + 
+          str(i_s) + ', m = ' + str(m))
     return (i_s, m, i_c_model)
 
 
-def plot_voltage_sweep(meas_run, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
-    """Plot diode current and capacitance over diode voltage
+def plot_vca_ic(v_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+    """Plot diode current over diode voltage
     
     Args:
-        meas_run(run_name, data) (tuple(string, dict)): Measurement run
-        run_name (string): Name of test run, e.g. "T298.0K"
-        data[phys_quantity: values] (dict[string: list]): 
-            Dictionary of diode capacitance ('C_CA'),
-            current ('I_C) and voltage ('V_CA') values
+        v_ca (float array): Cathode-Anode voltage.
+        i_c (float array): Diode current.
+        T (float): Temperature in Kelvin, defaults to 298.0
+        plot_dir (string): Optional: Folder in which plots are saved.
     """
-    v_ca = meas_run[1]['V_CA'][:]
-    i_c = meas_run[1]['I_C'][:] 
-    c_ca =  meas_run[1]['C_CA'][:]
-    T = float(meas_run[0][1:5])     # e.g. meas_run[0] = "T298.0K"
-
+    # Limits where I_c curve is purely exponential
     vca_lim_lower = 0.65
     vca_lim_upper = 0.75
     i_s, m, i_c_ideal_diode_model = ideal_diode_model(
-        meas_run[0], v_ca, i_c, vca_lim_lower, vca_lim_upper, T)
+        v_ca, i_c, vca_lim_lower, vca_lim_upper, T)
     
     label_ideal_diode_model=(
         'I_C_model = I_S * (exp (V_CA/(V_T*m)) -1):\n I_S = ' +
@@ -247,7 +254,7 @@ def plot_voltage_sweep(meas_run, plot_dir='/home/matt/Nextcloud/Studium/Hauptsem
     for i in range(len(ic_r)):
         ic_r[i] = i_c_eq_d_r(v_ca[i], i_s, m, T, r_ohm_simple)
     
-    label_diode_ohmic = 'I_C(R_S = ' + "{:.4g}".format(r_ohm_simple) + '\Ohm)'
+    label_diode_ohmic = 'I_C(R_S = ' + "{:.4g}".format(r_ohm_simple) + ' Ohm)'
     label_r = 'r_D = d(I_C)/d(V_CA)'
     
     # Plot I_C over V_CA
@@ -265,7 +272,7 @@ def plot_voltage_sweep(meas_run, plot_dir='/home/matt/Nextcloud/Studium/Hauptsem
     
     # Plot r over V_CA
     axr = ax1.twinx()
-    axr.set_ylabel('Resistance [\Ohm]')
+    axr.set_ylabel('Resistance [Ohm]')
     axr.set_ylim([0, 10])
     label_r = axr.plot(v_ca, r, 'g-.', label=label_r)
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
@@ -282,9 +289,9 @@ def plot_voltage_sweep(meas_run, plot_dir='/home/matt/Nextcloud/Studium/Hauptsem
     # labelnames =  label_ic + label_cca + label_ic_model
     labelnames =  label_ic + label_ic_model + label_ic_r_model
     labels = [l.get_label() for l in labelnames]
-    ax1.legend(labelnames, labels, loc='best')
+    ax1.legend(labelnames, labels, loc='best')  # TODO Get rid of 'Line2D()'
 
-    fname_pdf = plot_dir + '/VCA_IC_' + meas_run[0] + '.png'
+    fname_pdf = plot_dir + '/VCA_IC_T' + "{:.1g}".format(T) + '.png'
     plt.savefig(fname_pdf)
     plt.clf()
 
