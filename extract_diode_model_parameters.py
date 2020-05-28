@@ -32,10 +32,67 @@ def process_diode_measurement(measurements_fname='data.json', results_fname='mod
         v_ca = measurement[1]['V_CA'][:]
         i_c = measurement[1]['I_C'][:] 
         c_ca =  measurement[1]['C_CA'][:]
-        T = float(measurement[0][1:5])     # e.g. meas_run[0] = "T298.0K"
-        plot_vca_ic(v_ca, i_c, T)
-        plot_vca_cca(v_ca, c_ca, i_c, T)
-      
+        T = float(measurement[0][1:5])     # e.g. measurement[0] = "T298.0K"
+        model_params = diode_model_params_isotherm(v_ca, c_ca, i_c, T)
+        plot_vca_ic(v_ca, i_c, model_params)
+        plot_vca_cca(v_ca, c_ca, i_c, model_params)
+   
+
+def diode_model_params_isotherm(v_ca, c_ca, i_c, T):
+    """Extract diode model parameters at a fixed temperature
+
+    Args:
+        v_ca (float array): Cathode-Anode voltage [V.]
+        i_c (float array): Diode current [A].
+        v_ca (float array): Diode capacitance [F].
+        T (float): Temperature [K].
+
+    Returns:
+        (dict): Dictionary of model parameters T, I_S, m, R_S, TT
+    """
+    # Curve fit where I_c curve is purely exponential
+    vca_lim_lower_ic = 0.65
+    vca_lim_upper_ic = 0.75
+    i_s, m= ideal_diode_model(v_ca, i_c, vca_lim_lower_ic, vca_lim_upper_ic, T)
+        
+    print('Model parameters for T = ' + str("{:.1f}".format(T)), 'K: I_S = ' + 
+          str(i_s) + ', m = ' + str(m))
+    
+    # TODO: Is  mean of differential resistance better than simple 
+    # quotient of differences?
+    # # Calculate differential resistance r_D
+    # r_D = np.zeros(len(v_ca))
+    # # Backward derivative d(v_ca)/d(i_c)
+    # for i in range(1, len(r_D)):
+    #     r_D[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
+    # r_D[0] = r_D[1]     # No backward derivative possible for first value
+
+    # Mean of differential resistance between V_CA=0.9V and 1.0V
+    # v_ca_cropped_r, r_cropped = crop_data_range_to_x(v_ca, r_D, 0.9, 1.0)
+    # r_ohm = np.mean(r_cropped)
+    # print('R_D =', str(r_ohm))
+    
+    # Simple difference between V_CA=0.9V, V_C=1.0V
+    r_ohm_simple = (v_ca[70] - v_ca[50])/(i_c[70] - i_c[50])
+    print('R_D_simple =', str(r_ohm_simple))
+    
+    # Calculate C_CA model
+    vca_lim_lower_cca = 0.65
+    vca_lim_upper_cca = 1.0
+    tt = diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower_cca, vca_lim_upper_cca)
+    
+    print('Transit time for T = ' + str("{:.1f}".format(T)), 'K: TT =', 
+          "{:.4g}".format(tt), 's.')
+    
+    # TODO: Explanations of parameters?
+    model_params = {'T': T, 'I_S': i_s, 'm': m, 'R_S': r_ohm_simple, 
+                    'TT': tt, 'vca_lim_lower_ic': vca_lim_lower_ic, 
+                    'vca_lim_upper_ic': vca_lim_upper_ic,
+                    'vca_lim_lower_cca': vca_lim_lower_cca, 
+                    'vca_lim_upper_cca': vca_lim_upper_cca,
+                    }
+    return model_params
+   
       
 def crop_data_range_to_x(xdata, ydata, lower, upper):
     """Crop two data data vectors so that the second corresponds to the first
@@ -140,7 +197,7 @@ def get_ideal_diode_eq_log(T):
     return ideal_diode_eq_log_internal
     
 def ohmic_resistance_diode(v_ca, i_c, i_s, m, T=298.0):
-    """[summary]
+    """TODO: Does not work, delete??
     Args:
         v_ca (float): Cathode-Anode voltage.
         i_c (float): Diode current.
@@ -151,28 +208,29 @@ def ohmic_resistance_diode(v_ca, i_c, i_s, m, T=298.0):
     Returns:
         [type]: [description]
     """
-    r = (v_ca - np.log((i_c + i_s) / i_s) * const.Boltzmann * T / const.e) / i_c
-    return r 
+    r_D = (v_ca - np.log((i_c + i_s) / i_s) * const.Boltzmann * T / const.e) / i_c
+    return r_D 
 
 
-def i_c_eq_d_r(v_ca, i_s, m, T, r):
+def i_c_eq_d_r(v_ca, i_s, m, T, r_S):
     """Calculate current of an ideal diode in series with a resistor
     
     Args:
-        v_ca (float): Cathode-Anode voltage.
-        i_s (float): Saturation current.
+        v_ca (float): Cathode-Anode voltage [V].
+        i_s (float): Saturation current [A].
         m (float): Ideality factor (model parameter)
-        T (float): Temperature in Kelvin, defaults to 298.0
+        T (float): Temperature [K], defaults to 298.0
+        r_S (float): Ohmic diode resistance
 
     Returns:
         i_c (float array): Diode current
     """
     # Ideal diode and ohmic resistance in series:
-    # ln((i_c+i_s)/i_s) * v_t + i_c*r -v_ca = 0
+    # ln((i_c+i_s)/i_s) * v_t + i_c*r_S -v_ca = 0
     # In [12]: solve(log((x+a)/a)*b+c*x-d, x)                                                         
     # Out[12]: [(-a*c + b*LambertW(a*c*exp((a*c + d)/b)/b))/c]
     v_t = (const.Boltzmann * T *m) / const.e 
-    i_c = ((-i_s * r + v_t * lambertw(i_s*r * np.exp((i_s*r + v_ca)/v_t)/v_t))/r)
+    i_c = ((-i_s * r_S + v_t * lambertw(i_s*r_S * np.exp((i_s*r_S + v_ca)/v_t)/v_t))/r_S)
     i_c = np.real(i_c)      # Avoid warning; imaginary part is already zero
     return i_c
 
@@ -194,8 +252,6 @@ def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,
     Returns:
         i_s (float): Saturation current (model parameter).
         m (float): Ideality factor (model parameter)
-        ic_model (float array): 
-            Values of IC as calculated with the model.
     """
     v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca, i_c, 
                                     vca_lim_lower, vca_lim_upper)
@@ -206,11 +262,7 @@ def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,
     i_s = np.exp(p_opt[0])      # Result of ideal_diode_eq_log is log(i_s)
     m = p_opt[1]
     
-    i_c_model = np.zeros(len(v_ca))
-    for i in range(len(i_c_model)):
-        i_c_model[i] = np.exp(diode_eq_T(v_ca[i], np.log(i_s), m)) 
-
-    return (i_s, m, i_c_model)
+    return (i_s, m)
 
 
 def diode_capacitance_TT_eq(i_c, tt):
@@ -261,7 +313,7 @@ def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
     return tt
 
 
-def plot_vca_cca(v_ca, c_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_cca(v_ca, c_ca, i_c, model_params, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
     """Plot diode capacitance over diode voltage
     
     Args:
@@ -270,38 +322,28 @@ def plot_vca_cca(v_ca, c_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/Haup
         v_ca (float array): Diode capacitance.
         T (float): Temperature in Kelvin, defaults to 298.0
         plot_dir (string): Optional: Folder in which plots are saved.
-    """
-    # TODO Single function to determine diode current model?
-    # Diffusion capacitance depends linearly on the diode current
-    # Curve fit where I_c curve is purely exponential
-    vca_lim_lower = 0.65
-    vca_lim_upper = 0.75
-    i_s, m, i_c_ideal_diode_model = ideal_diode_model(
-        v_ca, i_c, vca_lim_lower, vca_lim_upper, T)
-        
-    # Resistance is simple difference d(v_ca)/d(i_c) between V_CA=0.9V, 1.0V
-    r_ohm_simple = (v_ca[70] - v_ca[50])/(i_c[70] - i_c[50])
-    print('R_D_simple =', str(r_ohm_simple))
+    """        
+    T = model_params['T']
+    i_s = model_params['I_S']
+    m = model_params['m']
+    r_s = model_params['R_S']
+    vca_lim_lower_cca = model_params['vca_lim_lower_cca']
+    vca_lim_upper_cca = model_params['vca_lim_upper_cca']
+    tt = model_params['TT']
     
     # Calculate I_C_R model based on a series of ideal diode ohmic resistance
     i_c_r = np.zeros(len(v_ca))
     for i in range(len(i_c_r)):
-        i_c_r[i] = i_c_eq_d_r(v_ca[i], i_s, m, T, r_ohm_simple)
+        i_c_r[i] = i_c_eq_d_r(v_ca[i], i_s, m, T, r_s)
         
-    # Calculate C_CA model
-    cca_lim_lower = 0.65
-    cca_lim_upper = 1.0
-    tt = diode_capacitance_model(v_ca, i_c, c_ca, cca_lim_lower, cca_lim_upper)
     c_ca_model = np.zeros(len(v_ca))
     for i in range(len(c_ca_model)):
         c_ca_model[i] = diode_capacitance_TT_eq(i_c_r[i], tt) 
-    
-    print('Transit time for T = ' + str("{:.1f}".format(T)), 'K: TT =', 
-          "{:.4g}".format(tt), 's.')
+        
     label_cca_model = ('C_CA_model = TT * I_C_model\n TT =' + 
                        "{:.4g}".format(tt) + 's\n based on ' + 
-                       str(cca_lim_lower) + 'V <= V_CA <= ' + 
-                       str(cca_lim_upper) + 'V')
+                       str(vca_lim_lower_cca) + 'V <= V_CA <= ' + 
+                       str(vca_lim_upper_cca) + 'V')
           
     # Plot IC over V_CA
     fig, ax1 = plt.subplots()
@@ -329,7 +371,7 @@ def plot_vca_cca(v_ca, c_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/Haup
     plt.clf()
 
 
-def plot_vca_ic(v_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_ic(v_ca, i_c, model_params, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
     """Plot diode current over diode voltage
     
     Args:
@@ -338,42 +380,37 @@ def plot_vca_ic(v_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/Hauptsemina
         T (float): Temperature in Kelvin, defaults to 298.0
         plot_dir (string): Optional: Folder in which plots are saved.
     """
-    # Curve fit where I_c curve is purely exponential
-    vca_lim_lower = 0.65
-    vca_lim_upper = 0.75
-    i_s, m, i_c_ideal_diode_model = ideal_diode_model(
-        v_ca, i_c, vca_lim_lower, vca_lim_upper, T)
-        
-    print('Model parameters for T = ' + str("{:.1f}".format(T)), 'K: I_S = ' + 
-          str(i_s) + ', m = ' + str(m))
+    T = model_params['T']
+    i_s = model_params['I_S']
+    m = model_params['m']
+    r_s = model_params['R_S']
+    vca_lim_lower_ic = model_params['vca_lim_lower_ic']
+    vca_lim_upper_ic = model_params['vca_lim_upper_ic']
+
+    diode_eq_T = get_ideal_diode_eq_log(T)
+    i_c_ideal_diode_model = np.zeros(len(v_ca))
+    for i in range(len(i_c_ideal_diode_model)):
+        i_c_ideal_diode_model[i] = np.exp(diode_eq_T(v_ca[i], np.log(i_s), m)) 
+    
     label_ideal_diode_model=(
         'I_C_ideal = I_S * (exp (V_CA/(V_T*m)) -1):\n I_S = ' +
         "{:.4g}".format(i_s) + ' A, m = ' + "{:.4g}".format(m) +
-        '\n based on ' + str(vca_lim_lower) + 'V <= V_CA <= ' + 
-        str(vca_lim_upper) + 'V')
-    
-    # Calculate differential resistance r_D
-    r = np.zeros(len(v_ca))
-    # Backward derivative d(v_ca)/d(i_c)
-    for i in range(1, len(r)):
-        r[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
-    r[0] = r[1]     # No backward derivative possible for first value
+        '\n based on ' + str(vca_lim_lower_ic) + 'V <= V_CA <= ' + 
+        str(vca_lim_upper_ic) + 'V')
 
-    # Mean of differential resistance between V_CA=0.9V and 1.0V
-    # v_ca_cropped_r, r_cropped = crop_data_range_to_x(v_ca, r, 0.9, 1.0)
-    # r_ohm = np.mean(r_cropped)
-    # print('R_D =', str(r_ohm))
-    
-    # Or simple difference between V_CA=0.9V, V_C=1.0V
-    r_ohm_simple = (v_ca[70] - v_ca[50])/(i_c[70] - i_c[50])
-    print('R_D_simple =', str(r_ohm_simple))
+    # # Calculate differential resistance r_D
+    r_D = np.zeros(len(v_ca))
+    # Backward derivative d(v_ca)/d(i_c)
+    for i in range(1, len(r_D)):
+        r_D[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
+    r_D[0] = r_D[1]     # No backward derivative possible for first value
 
     # Calculate I_C_R model based on a series of ideal diode ohmic resistance
     i_c_r = np.zeros(len(v_ca))
     for i in range(len(i_c_r)):
-        i_c_r[i] = i_c_eq_d_r(v_ca[i], i_s, m, T, r_ohm_simple)
+        i_c_r[i] = i_c_eq_d_r(v_ca[i], i_s, m, T, r_s)
     
-    label_diode_ohmic = 'I_C_model (R_S = ' + "{:.4g}".format(r_ohm_simple) + ' Ohm)'
+    label_diode_ohmic = 'I_C_model (R_S = ' + "{:.4g}".format(r_s) + ' Ohm)'
     label_r = 'r_D = d(I_C)/d(V_CA)'
     
     # Plot I_C and models over V_CA
@@ -386,11 +423,11 @@ def plot_vca_ic(v_ca, i_c, T, plot_dir='/home/matt/Nextcloud/Studium/Hauptsemina
     ax1.set_xlabel('V_CA [V]')
     ax1.set_ylabel('I_C [A]')
     
-    # Plot r over V_CA
+    # Plot r_D over V_CA
     axr = ax1.twinx()
     axr.set_ylabel('Resistance [Ohm]')
     axr.set_ylim([0, 10])
-    label_r = axr.plot(v_ca, r, 'g-.', label=label_r)
+    label_r = axr.plot(v_ca, r_D, 'g-.', label=label_r)
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
     
     # Prepare Labels of ax1
