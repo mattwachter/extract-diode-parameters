@@ -84,6 +84,7 @@ class DiodeModelIsotherm:
             c_ca_model[i] = diode_capacitance_TT_eq(i_c_r[i], self.tt)
         return c_ca_model
 
+
 def process_diode_measurement(measurements_fname='data.json', 
     results_fname='model.json', plots_dir='figures' ):
     """Extract diode model parameters from JSON file with measurements.
@@ -104,6 +105,7 @@ def process_diode_measurement(measurements_fname='data.json',
     with open(measurements_fname, 'r') as myfile:
         measurements = json.load(myfile)
 
+    models = []
     #TODO Guarantee correct order of dict entries for Python < 3.7
     for measurement in measurements.items():
         v_ca = measurement[1]['V_CA'][:]
@@ -111,9 +113,19 @@ def process_diode_measurement(measurements_fname='data.json',
         c_ca =  measurement[1]['C_CA'][:]
         T = float(measurement[0][1:5])     # e.g. measurement[0] = "T298.0K"
         model = DiodeModelIsotherm(v_ca, i_c, c_ca, T)
+        models.append(model)
         plot_vca_ic(v_ca, i_c, model)
         plot_vca_cca(v_ca, i_c, c_ca, model)
 
+    i_s_t = np.zeros(len(models))
+    for mod in models:
+        if (295. < model.T < 305.0)
+        i_s_0 = model.i_s
+    
+    for mod in models:
+        i_s_model = diode_saturation_current(i_s_0, model.T)
+        print(' For T = ' + str(model.T) + 'K: I_S = ' + str(model.i_s) +
+              'A, I_S_model(T) = ' + str(i_s_model) + 'A.')
 
 def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     """Extract diode model parameters at a fixed temperature
@@ -424,6 +436,23 @@ def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
 
     return tt
 
+
+def diode_saturation_current(i_s_0, T):
+    """hicumL2V2p4p0_internal.va
+
+    Args:
+        i_s_0 ([type]): [description]
+        T ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """
+    vgc = 1.17  # Bandgap voltage silicon
+    VT = (const.k * T) / const.e
+    T_nom = 300.15  # Nominal temperature [K]
+    qtt0 = T / T_nom
+    i_s = i_s_0 * np.exp(vgc/VT * (qtt0-1))
+    return i_s
 
 def plot_vca_cca(v_ca, i_c, c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
     """Plot diode capacitance over diode voltage
