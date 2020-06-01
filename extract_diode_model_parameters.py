@@ -1,13 +1,20 @@
 #! /usr/bin/python3
 
+# pylint: disable=unused-wildcard-import
 import json
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 import scipy.constants as const
 from scipy.special import lambertw
+# Ensure custom functions can be found.
+import sys
+sys.path.append('/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/PythonExtraction')
+# Use diode functions of Python files in working directory
+from diode_equations import  *  
+from diode_plots import  *
+from diode_utils import  *
 
-
+# TODO All arrays with suffix _a
 class DiodeModelIsotherm:
     """
     TODO Define vca_lim variables at class level?
@@ -85,6 +92,35 @@ class DiodeModelIsotherm:
         return c_ca_model
 
 
+class DiodeModel(DiodeModelIsotherm):
+    def __init__(self, v_ca, i_c, c_ca, T, T_i_s_a, i_s_temp_a ,):
+        """Diode model with temperature dependence of saturation current.
+
+        TODO Calculation
+        Args:
+            v_ca ([type]): [description]
+            i_c ([type]): [description]
+            c_ca ([type]): [description]
+            T ([type]): [description]
+            T_i_s_a (float array): 
+                Temperatures [K] at which I_S was estimated
+            i_s_temp_a  (float array): 
+                Array of estimated I_S at temperatures T_i_s_a
+        """
+        # Extends __init__() of DiodeModelIsotherm
+        DiodeModelIsotherm.__init__(self, v_ca, i_c, c_ca, T)
+        self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a, 
+                                                        i_s_temp_a)
+        self.params['i_s_temp_coeff'] = self.i_s_temp_coeff
+        
+    def calc_i_s_temp_a(self, T_lower = 250, T_upper = 450):
+        T_a = np.linspace(T_lower, T_upper, num=100)
+        i_s_a = np.zeros(len(T_a))
+        for i in range(len(i_s_a)):
+            i_s_a[i] = diode_saturation_current(self.i_s, T_a[i])
+        return (T_a, i_s_a)
+
+
 def process_diode_measurement(measurements_fname='data.json', 
     results_fname='model.json', plots_dir='figures' ):
     """Extract diode model parameters from JSON file with measurements.
@@ -102,8 +138,8 @@ def process_diode_measurement(measurements_fname='data.json',
     Returns:
         model_parameters_fname (string): File name of a new JSON file
     """
-    with open(measurements_fname, 'r') as myfile:
-        measurements = json.load(myfile)
+    with open(measurements_fname, 'r') as f:
+        measurements = json.load(f)
 
     models = []
     #TODO Guarantee correct order of dict entries for Python < 3.7
@@ -116,16 +152,30 @@ def process_diode_measurement(measurements_fname='data.json',
         models.append(model)
         plot_vca_ic(v_ca, i_c, model)
         plot_vca_cca(v_ca, i_c, c_ca, model)
+ 
+    i_s_temp_a  = np.zeros(len(models))     # Array of saturation currents at
+    T_i_s_a  = np.zeros(len(models))        # different temperatures
+    i = 0
+    for mod in models:
+        i_s_0 = diode_saturation_current_0(mod.i_s, T)
+        print('I_S = ', model.i_s, 'I_S0_model =', i_s_0)  
+        i_s_model = diode_saturation_current(i_s_0, mod.T)
+        i_s_temp_a[i] = mod.i_s
+        T_i_s_a[i] = mod.T 
+        print(' For T = ' + str(mod.T) + 'K: I_S = ' + str(mod.i_s) +
+              ' A, I_S_model(T) = ' + str(i_s_model) + ' A.')
+        i += 1
+        if (290. < mod.T < 310.15):
+            print('Measurement series at T =', mod.T, 
+                  ' K has less than 10 K difference to T_nom = 300.15', 
+                  'and will be used as reference.')
 
-    i_s_t = np.zeros(len(models))
-    for mod in models:
-        if (295. < model.T < 305.0)
-        i_s_0 = model.i_s
+    base_model = DiodeModel(v_ca, i_c, c_ca, T, T_i_s_a, i_s_temp_a)
+    plot_T_is(T_i_s_a, i_s_temp_a, base_model)
     
-    for mod in models:
-        i_s_model = diode_saturation_current(i_s_0, model.T)
-        print(' For T = ' + str(model.T) + 'K: I_S = ' + str(model.i_s) +
-              'A, I_S_model(T) = ' + str(i_s_model) + 'A.')
+    with open(results_fname, 'w') as f:
+        json.dump(base_model.params, f, ensure_ascii=True)
+
 
 def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     """Extract diode model parameters at a fixed temperature
@@ -145,7 +195,7 @@ def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     i_s, m= ideal_diode_model(v_ca, i_c, vca_lim_lower_ic, vca_lim_upper_ic, T)
 
     print('Model parameters for T = ' + str("{:.1f}".format(T)), 'K: I_S = ' +
-          str(i_s) + ', m = ' + str(m))
+          str(i_s) + ' A, m = ' + str(m))
 
     # TODO: Is  mean of differential resistance better than simple
     # quotient of differences?
@@ -183,356 +233,23 @@ def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     return model_params
 
 
-def crop_data_range_to_x(xdata, ydata, lower, upper):
-    """Crop two data data vectors so that the second corresponds to the first
+# TODO Separate files for modelling functions?!
+def i_s_temp_dependence_model(T_i_s_a, i_s_temp_a ):
+    """Determine temperature dependence of diode saturation currrent.
 
     Args:
-        xdata (1D array/list):
-        ydata (1D array/list):
-        lower (float): desired lower bound of xdata
-        upper (float): desired upper bound of xdata
-
-    Raises:
-        ValueError: Length of xdata and ydata must be equal
-        ValueError: Lower bound needs to be >= xdata[0]
-        ValueError: Upper bound needs to <= xdata[-1]
-        ValueError: xdata needs to be a monotonously rising sequence
-
-    Returns:
-        tuple of 1D arrays: cropped xdata and ydata
-    """
-    if (len(xdata) != len(ydata)):
-        raise ValueError('Length of xdata and ydata must be equal!')
-
-    if (lower < xdata[0]):
-        raise ValueError('Lower bound needs to be equal or larger than first value of xdata !')
-
-    if (upper > xdata[-1]):
-        raise ValueError('Upper bound needs to equal or smaller than last value of xdata!')
-
-    x_previous = xdata[0]
-    for i in range(1, len(xdata)):
-        if (xdata[i] <= x_previous):
-            raise ValueError('xdata', xdata, 'needs to be a monotonously rising sequence!')
-        else:
-            x_previous = xdata[i]
-
-    for i in range(len(xdata)):
-        if (xdata[i] >= lower):
-            index_lower = i
-            break
-
-    for i in (range(len(xdata) -1, -1, -1)):
-        if (xdata[i] <= upper):
-            index_upper = i
-            break
-
-    xdata_cropped = xdata[index_lower:index_upper]
-    ydata_cropped = ydata[index_lower:index_upper]
-
-    return (xdata_cropped, ydata_cropped)
-
-
-def calc_rd_deriv_a(v_ca, i_c):
-    """Resistance array as a derivative of voltage over current.
-
-    TODO Check input
-    Args:
-        v_ca (float array): Cathode-Anode voltage [V].
-        i_c (float array): Diode current.
-
-    Returns:
-        (float array): Differential resistance r_D [Ohm]
-    """
-    r_D = np.zeros(len(v_ca))
-    # Backward derivative d(v_ca)/d(i_c)
-    for i in range(1, len(r_D)):
-        r_D[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
-    r_D[0] = r_D[1]     # No backward derivative possible for first value
-    return r_D
-
-
-def ideal_diode_eq_log(v_ca, i_s_log, m):
-    """Log of Shockley Diode equation
-
-    Shockley Diode equation:
-    i_c = i_s * (exp(v_ca * const.e)/(m * const.k * T) - 1)
-    For v_ca >> v_t = .(const.k * T)/const.e = 0.026V * T/300K:
-    ic approxeq i_s * exp(v_ca / (v_t * m))
-    log(ic) approxeq log(i_s) + v_ca / (v_t * m)
-
-    TODO: handle Temperature! (automatically ?)
-    Args:
-        v_ca (float): Cathode-Anode voltage.
-        i_s_log (float): Log of saturation current.
-        m (float): Ideality factor.
-        T (float): Temperature in Kelvin, defaults to 298.0
+        T_i_s_a ([type]): [description]
+        i_s_temp_a ([type]): [description]
 
     Returns:
         [type]: [description]
     """
-    i_c_log = i_s_log + v_ca * (const.e/(m * const.k * 298.0))
-    return i_c_log
-
-
-def ideal_diode_eq(v_ca, i_s, m, T):
-    """Shockley Diode equation
-
-    Args:
-        v_ca (float): Cathode-Anode voltage [V].
-        i_s_log (float): Saturation current [A].
-        m (float): Ideality factor.
-        T (float): Temperature [T].
-
-    Returns:
-        (float): Diode current I_C [A]
-    """
-    i_c = i_s * (np.exp(v_ca * const.e)/(m * const.k * T) - 1)
-    return i_c
-
-def get_ideal_diode_eq_log(T):
-    """ Wrapper function for ideal_diode_eq_log.
-
-    Needed for scipy.optimize.curve_fit()
-        TODO: Clarify description! more elegant solution?
-    """
-    def ideal_diode_eq_log_internal(v_ca, i_s_log, m):
-        """Log of Shockley Diode equation
-
-        Log of exponential equation facilates curve fitting
-        Shockley Diode equation:
-        i_c = i_s * (exp(v_ca * const.e)/(m * const.k * T) - 1)
-        For v_ca >> v_t = .(const.k * T)/const.e = 0.026V * T/300K:
-        ic approxeq i_s * exp(v_ca / (v_t * m))
-        log(ic) approxeq log(i_s) + v_ca / (v_t * m)
-
-        TODO: handle Temperature! (automatically ?)
-        Args:
-            v_ca (float): Cathode-Anode voltage.
-            i_s_log (float): Log of saturation current.
-            m (float): Ideality factor.
-            T (float): Temperature in Kelvin, defaults to 298.0
-
-        Returns:
-            i_c_log (float): logarithm of diode current
-        """
-        i_c_log = i_s_log + v_ca * (const.e/(m * const.k * T))
-        return i_c_log
-    return ideal_diode_eq_log_internal
-
-def ohmic_resistance_diode(v_ca, i_c, i_s, m, T=298.0):
-    """TODO: Does not work, delete??
-    Args:
-        v_ca (float): Cathode-Anode voltage.
-        i_c (float): Diode current.
-        i_s (float): Saturation current.
-        m (float): Ideality factor (model parameter)
-        T (float): Temperature in Kelvin, defaults to 298.0
-
-    Returns:
-        [type]: [description]
-    """
-    r_D = (v_ca - np.log((i_c + i_s) / i_s) * const.k * T / const.e) / i_c
-    return r_D
-
-
-def i_c_eq_d_r(v_ca, i_s, m, T, r_S):
-    """Calculate current of an ideal diode in series with a resistor
-
-    Args:
-        v_ca (float): Cathode-Anode voltage [V].
-        i_s (float): Saturation current [A].
-        m (float): Ideality factor (model parameter)
-        T (float): Temperature [K], defaults to 298.0
-        r_S (float): Ohmic diode resistance
-
-    Returns:
-        i_c (float array): Diode current
-    """
-    # Ideal diode and ohmic resistance in series:
-    # ln((i_c+i_s)/i_s) * v_t + i_c*r_S -v_ca = 0
-    # In [12]: solve(log((x+a)/a)*b+c*x-d, x)
-    # Out[12]: [(-a*c + b*LambertW(a*c*exp((a*c + d)/b)/b))/c]
-    v_t = (const.k * T *m) / const.e
-    i_c = ((-i_s * r_S + v_t * lambertw(i_s*r_S * np.exp((i_s*r_S + v_ca)/v_t)/v_t))/r_S)
-    i_c = np.real(i_c)      # Avoid warning; imaginary part is already zero
-    return i_c
-
-
-def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,
-                          vca_lim_upper=0.8, T=298.0):
-    """Calculate a best fit model for the Shockley Diode equation
-
-    Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        vca_lim_lower (float, optional):
-            Lower limit in Volt of range the model is based on.
-            Defaults to 0.65.
-        vca_lim_upper (float, optional): [description].
-            Upper limit in Volt of range the model is based on.
-            Defaults to 0.8.
-
-    Returns:
-        i_s (float): Saturation current (model parameter).
-        m (float): Ideality factor (model parameter)
-    """
-    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca, i_c,
-                                    vca_lim_lower, vca_lim_upper)
-
     log_vector = np.vectorize(np.log)
-    diode_eq_T = get_ideal_diode_eq_log(T)
-    p_opt, pcov = curve_fit(diode_eq_T, v_ca_cropped, log_vector(i_c_cropped))
-    i_s = np.exp(p_opt[0])      # Result of ideal_diode_eq_log is log(i_s)
-    m = p_opt[1]
-
-    return (i_s, m)
-
-
-def diode_capacitance_TT_eq(i_c, tt):
-    """Diode capacitance as function of diode current and transit time
-
-    Diffusion capacitance is linearly dependent on diode current.
-    Args:
-        i_c (float: Diode current.
-        tt (float): Transit time.
-
-    Returns:
-        (float): Diode capacitance.
-    """
-    c_ca = tt * i_c
-    return c_ca
-
-
-def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
-                            vca_lim_upper=0.8):
-    """Calculate a best fit model for the diffusion capacitance
-
-    Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        c_ca (float array): Diode capacitance.
-        vca_lim_lower (float, optional):
-            Lower limit in Volt of range the model is based on.
-            Defaults to 0.65.
-        vca_lim_upper (float, optional): [description].
-            Upper limit in Volt of range the model is based on.
-            Defaults to 0.8.
-
-    Returns:
-        tt (float): Transit time.
-    """
-    v_ca_cropped, c_ca_cropped = crop_data_range_to_x(v_ca, c_ca,
-                                            vca_lim_lower, vca_lim_upper)
-    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca, i_c,
-                                            vca_lim_lower, vca_lim_upper)
-    # Map to log to reduce numerical error
-    # log_vector = np.vectorize(np.log)
-    # p_opt, pcov = curve_fit(diode_capacitance_TT_eq, log_vector(i_c_cropped),
-    #                         log_vector(c_ca_cropped))
-    p_opt, pcov = curve_fit(diode_capacitance_TT_eq, i_c_cropped,
-                            c_ca_cropped)
-    tt = p_opt[0]   # Transit time
-
-    return tt
-
-
-def diode_saturation_current(i_s_0, T):
-    """hicumL2V2p4p0_internal.va
-
-    Args:
-        i_s_0 ([type]): [description]
-        T ([type]): [description]
-
-    Returns:
-        [type]: [description]
-    """
-    vgc = 1.17  # Bandgap voltage silicon
-    VT = (const.k * T) / const.e
-    T_nom = 300.15  # Nominal temperature [K]
-    qtt0 = T / T_nom
-    i_s = i_s_0 * np.exp(vgc/VT * (qtt0-1))
-    return i_s
-
-def plot_vca_cca(v_ca, i_c, c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
-    """Plot diode capacitance over diode voltage
-
-    Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        v_ca (float array): Diode capacitance.
-        T (float): Temperature in Kelvin, defaults to 298.0
-        plot_dir (string): Optional: Folder in which plots are saved.
-    """
-    i_c_r = model.calc_ic_diode_ohmic_a(v_ca)
-    c_ca_model = model.calc_c_diode_a(i_c_r)
-
-    # Plot IC over V_CA
-    fig, ax1 = plt.subplots()
-    label_ic = ax1.plot(v_ca, i_c, '.', label='I_C')
-    ax1.set_ylabel('I_C [A]')
-
-    # Prepare Labels of ax1
-    labelnames =  label_ic
-    labels = [l.get_label() for l in labelnames]
-    ax1.legend(labelnames, labels, loc='best')  # TODO Get rid of 'Line2D()'
-
-    # Plot C_CA over V_CA
-    ax2 = ax1.twinx()
-    label_cca = ax2.plot(v_ca, c_ca, 'rx', label='C_CA')
-    lab_cca_model = ax2.plot(v_ca, c_ca_model, 'g-',
-                             label=model.label_cca_model)
-    ax2.set_ylabel('C_CA [F]')
-
-    # Prepare Labels of ax2
-    labelnames =  label_cca + lab_cca_model
-    labels = [l.get_label() for l in labelnames]
-    ax2.legend(labelnames, labels, loc='lower right')  # TODO Get rid of 'Line2D()'
-
-    fname_pdf = plot_dir + '/VCA_CCA_T' + "{:.1f}".format(model.T) + '.png'
-    plt.savefig(fname_pdf)
-    plt.clf()
-
-
-def plot_vca_ic(v_ca, i_c, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
-    """Plot diode current over diode voltage
-
-    Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        T (float): Temperature in Kelvin, defaults to 298.0
-        plot_dir (string): Optional: Folder in which plots are saved.
-    """
-    # Calculate the model data
-    i_c_ideal_diode_model = model.calc_ic_ideal_diode_a(v_ca)
-    r_D = calc_rd_deriv_a(v_ca, i_c)
-    i_c_r = model.calc_ic_diode_ohmic_a(v_ca)
-
-    # Plot I_C and models over V_CA
-    fig, ax1 = plt.subplots()
-    label_ic = ax1.semilogy(v_ca, i_c, '.', label='I_C')
-    label_ic_model = ax1.semilogy(v_ca, i_c_ideal_diode_model, '-b',
-                                  label=model.label_ideal_diode_model)
-    label_ic_r_model = ax1.semilogy(v_ca, i_c_r, '--r',
-                                    label=model.label_diode_ohmic)
-    ax1.set_xlabel('V_CA [V]')
-    ax1.set_ylabel('I_C [A]')
-
-    # Prepare I_C Labels of ax1
-    labelnames =  label_ic + label_ic_model + label_ic_r_model
-    labels = [l.get_label() for l in labelnames]
-    ax1.legend(labelnames, labels, loc='best')
-
-    # Plot r_D over V_CA
-    axr = ax1.twinx()
-    axr.set_ylabel('Resistance [Ohm]')
-    axr.set_ylim([0, 10])
-    label_r = axr.plot(v_ca, r_D, 'g-.', label=model.label_r)
-    axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
-
-    fname_pdf = plot_dir + '/VCA_IC_T' + "{:.1f}".format(model.T) + '.png'
-    plt.savefig(fname_pdf)
-    plt.clf()
+    p_opt, pcov = curve_fit(diode_saturation_current_log, T_i_s_a,
+                            log_vector(i_s_temp_a))
+    print(p_opt)
+    i_s_temp_coeff = p_opt[0]   # Transit time
+    return i_s_temp_coeff
 
 
 def main():
