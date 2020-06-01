@@ -70,7 +70,7 @@ def ohmic_resistance_diode(v_ca, i_c, i_s, m, T=298.0):
     return r_D
 
 
-def i_c_eq_d_r(v_ca, i_s, m, T, r_S):
+def ic_diode_ohmic(v_ca, i_s, m, T, r_S):
     """Calculate current of an ideal diode in series with a resistor
 
     Args:
@@ -114,9 +114,9 @@ def ideal_diode_model(v_ca_a , i_c_a , vca_lim_lower=0.65,
     v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca_a , i_c_a ,
                                     vca_lim_lower, vca_lim_upper)
 
-    log_vector = np.vectorize(np.log)
+    log_vec = np.vectorize(np.log)
     diode_eq_T = get_ideal_diode_eq_log(T)
-    p_opt, pcov = curve_fit(diode_eq_T, v_ca_cropped, log_vector(i_c_cropped))
+    p_opt, pcov = curve_fit(diode_eq_T, v_ca_cropped, log_vec(i_c_cropped))
     i_s = np.exp(p_opt[0])      # Result of ideal_diode_eq_log is log(i_s)
     m = p_opt[1]
 
@@ -161,9 +161,9 @@ def diode_capacitance_model(v_ca_a , i_c_a , c_ca_a , vca_lim_lower=0.65,
     v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca_a , i_c_a ,
                                             vca_lim_lower, vca_lim_upper)
     # Map to log to reduce numerical error
-    # log_vector = np.vectorize(np.log)
-    # p_opt, pcov = curve_fit(diode_capacitance_TT_eq, log_vector(i_c_cropped),
-    #                         log_vector(c_ca_cropped))
+    # log_vec = np.vectorize(np.log)
+    # p_opt, pcov = curve_fit(diode_capacitance_TT_eq, log_vec(i_c_cropped),
+    #                         log_vec(c_ca_cropped))
     p_opt, pcov = curve_fit(diode_capacitance_TT_eq, i_c_cropped,
                             c_ca_cropped)
     tt = p_opt[0]   # Transit time

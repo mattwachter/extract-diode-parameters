@@ -57,35 +57,29 @@ class DiodeModelIsotherm:
         """
         # Define diode equation with fixed model parameters
         def ideal_diode_eq_self(v_ca):
-            i_c = self.i_s * (np.exp((v_ca * const.e)/(self.m * const.k *
-                self.T)) - 1)
-            return i_c
-        ideal_diode_eq_self_vector = np.vectorize(ideal_diode_eq_self)
-        i_c_ideal_diode_a = ideal_diode_eq_self_vector(v_ca_a)
-        
-        # i_c_ideal_diode_a_old = np.zeros(len(v_ca_a))
-        # for i in range(len(i_c_ideal_diode_a_old)):
-        #     i_c_ideal_diode_a_old[i] = ideal_diode_eq(v_ca_a[i], self.i_s, 
-        #         self.m, self.T)
+            return ideal_diode_eq(v_ca, self.i_s, self.m, self.T)
+        ideal_diode_eq_self_vec = np.vectorize(ideal_diode_eq_self)
+        i_c_ideal_diode_a = ideal_diode_eq_self_vec(v_ca_a)
         return i_c_ideal_diode_a
 
 
     def calc_ic_diode_ohmic_a(self, v_ca_a):
         """Current array from an ideal diode in series with a resistor.
 
-        TODO Check input
+        TODO More efficient solution than np.vectorize()?
         Args:
             v_ca_a (float array): Cathode-Anode voltage [V].
 
         Returns:
             (float array): Diode current I_C [A]
         """
-        i_c_r = np.zeros(len(v_ca_a))
-        for i in range(len(i_c_r)):
-            i_c_r[i] = i_c_eq_d_r(v_ca_a[i], self.i_s, self.m, self.T, self.r_s)
-        return i_c_r
+        def ic_diode_ohmic_self(v_ca):
+            return ic_diode_ohmic(v_ca, self.i_s, self.m, self.T, self.r_s)
+        ic_diode_ohmic_self_vec = np.vectorize(ic_diode_ohmic_self)
+        i_c_r_a = ic_diode_ohmic_self_vec(v_ca_a)
+        return i_c_r_a
 
-    def calc_c_diode_a(self, i_c_r):
+    def calc_c_diode_a(self, i_c_r_a):
         """Capacitance array linearly dependent on diode current (model).
 
         TODO Check input
@@ -95,10 +89,11 @@ class DiodeModelIsotherm:
         Returns:
             (float array): Diode capacitance C_CA [A]
         """
-        c_ca_model = np.zeros(len(i_c_r))
-        for i in range(len(c_ca_model)):
-            c_ca_model[i] = diode_capacitance_TT_eq(i_c_r[i], self.tt)
-        return c_ca_model
+        def diode_capacitance_TT_eq_self(i_c_r):
+            return diode_capacitance_TT_eq(i_c_r, self.tt)
+        diode_capacitance_TT_eq_self_vec = np.vectorize(diode_capacitance_TT_eq_self)
+        c_ca_model_a = diode_capacitance_TT_eq_self_vec(i_c_r_a)
+        return c_ca_model_a
 
 
 class DiodeModel(DiodeModelIsotherm):
@@ -242,9 +237,9 @@ def i_s_temp_dependence_model(T_i_s_a, i_s_temp_a ):
     Returns:
         [type]: [description]
     """
-    log_vector = np.vectorize(np.log)
+    log_vec = np.vectorize(np.log)
     p_opt, pcov = curve_fit(diode_saturation_current_log, T_i_s_a,
-                            log_vector(i_s_temp_a))
+                            log_vec(i_s_temp_a))
     print(p_opt)
     i_s_temp_coeff = p_opt[0]   # Transit time
     return i_s_temp_coeff
