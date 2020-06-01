@@ -43,23 +43,32 @@ class DiodeModelIsotherm:
             str(self.vca_lim_lower_cca) + 'V <= V_CA <= ' +
             str(self.vca_lim_upper_cca) + 'V')
         # TODO: Makes sense as class attribute?
-        self.label_r = 'r_D = d(I_C)/d(V_CA)'
+        self.label_r = 'r_D = d(V_CA)/d(I_C)'
 
     def calc_ic_ideal_diode_a(self, v_ca):
         """Ideal diode current array as a function of a diode voltage.
 
-        TODO Check input
+        TODO More efficient solution than np.vectorize()?
         Args:
             v_ca (float array): Cathode-Anode voltage [V].
 
         Returns:
             (float array): Diode current I_C [A]
         """
-        i_c_ideal_diode_a = np.zeros(len(v_ca))
-        for i in range(len(i_c_ideal_diode_a)):
-            i_c_ideal_diode_a[i] = ideal_diode_eq(v_ca[i], self.i_s, self.m,
-                                                  self.T)
+        # Define diode equation with fixed model parameters
+        def ideal_diode_eq_self(v_ca):
+            i_c = self.i_s * (np.exp(v_ca * const.e)/(self.m * const.k * self.T)
+                 - 1)
+            return i_c
+        ideal_diode_eq_self_vector = np.vectorize(ideal_diode_eq_self)
+        i_c_ideal_diode_a = ideal_diode_eq_self_vector(v_ca)
+        
+        i_c_ideal_diode_a_old = np.zeros(len(v_ca))
+        for i in range(len(i_c_ideal_diode_a_old)):
+            i_c_ideal_diode_a_old[i] = ideal_diode_eq(v_ca[i], self.i_s, 
+                self.m, self.T)
         return i_c_ideal_diode_a
+
 
     def calc_ic_diode_ohmic_a(self, v_ca):
         """Current array from an ideal diode in series with a resistor.
@@ -109,9 +118,10 @@ class DiodeModel(DiodeModelIsotherm):
         """
         # Extends __init__() of DiodeModelIsotherm
         DiodeModelIsotherm.__init__(self, v_ca, i_c, c_ca, T)
-        self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a, 
-                                                        i_s_temp_a)
-        self.params['i_s_temp_coeff'] = self.i_s_temp_coeff
+        # TODO Ensure reasonable results for I_S temperature coefficient.
+        # self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a, 
+        #                                                 i_s_temp_a)
+        # self.params['i_s_temp_coeff'] = self.i_s_temp_coeff
         
     def calc_i_s_temp_a(self, T_lower = 250, T_upper = 450):
         T_a = np.linspace(T_lower, T_upper, num=100)
@@ -199,18 +209,6 @@ def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
 
     # TODO: Is  mean of differential resistance better than simple
     # quotient of differences?
-    # # Calculate differential resistance r_D
-    # r_D = np.zeros(len(v_ca))
-    # # Backward derivative d(v_ca)/d(i_c)
-    # for i in range(1, len(r_D)):
-    #     r_D[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
-    # r_D[0] = r_D[1]     # No backward derivative possible for first value
-
-    # Mean of differential resistance between V_CA=0.9V and 1.0V
-    # v_ca_cropped_r, r_cropped = crop_data_range_to_x(v_ca, r_D, 0.9, 1.0)
-    # r_ohm = np.mean(r_cropped)
-    # print('R_D =', str(r_ohm))
-
     # Simple difference between V_CA=0.9V, V_C=1.0V
     r_ohm_simple = (v_ca[70] - v_ca[50])/(i_c[70] - i_c[50])
     print('R_D_simple =', str(r_ohm_simple))

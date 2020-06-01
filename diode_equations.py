@@ -7,6 +7,7 @@ from scipy.special import lambertw
 
 from diode_utils import *
 
+
 def ideal_diode_eq(v_ca, i_s, m, T):
     """Shockley Diode equation
 
@@ -166,7 +167,6 @@ def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
     p_opt, pcov = curve_fit(diode_capacitance_TT_eq, i_c_cropped,
                             c_ca_cropped)
     tt = p_opt[0]   # Transit time
-
     return tt
 
 
@@ -270,9 +270,5 @@ def calc_rd_deriv_a(v_ca, i_c):
     Returns:
         (float array): Differential resistance r_D [Ohm]
     """
-    r_D = np.zeros(len(v_ca))
-    # Backward derivative d(v_ca)/d(i_c)
-    for i in range(1, len(r_D)):
-        r_D[i] = (v_ca[i] - v_ca[i-1])/(i_c[i] - i_c[i-1])
-    r_D[0] = r_D[1]     # No backward derivative possible for first value
+    r_D = np.gradient(v_ca, i_c)
     return r_D

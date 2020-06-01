@@ -1,6 +1,7 @@
 """ General helper functions to handle measurement data
-"""
 
+TODO: Use more efficient numpy solution?
+"""
 
 def crop_data_range_to_x(xdata, ydata, lower, upper):
     """Crop two data data vectors so that the second corresponds to the first
