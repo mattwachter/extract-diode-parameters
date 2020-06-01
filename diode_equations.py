@@ -20,7 +20,7 @@ def ideal_diode_eq(v_ca, i_s, m, T):
     Returns:
         (float): Diode current I_C [A]
     """
-    i_c = i_s * (np.exp(v_ca * const.e)/(m * const.k * T) - 1)
+    i_c = i_s * (np.exp((v_ca * const.e)/(m * const.k * T)) - 1)
     return i_c
 
 def get_ideal_diode_eq_log(T):
