@@ -19,8 +19,8 @@ class DiodeModelIsotherm:
     """
     TODO Define vca_lim variables at class level?
     """
-    def __init__(self, v_ca, i_c, c_ca, T):
-        self.params = diode_model_params_isotherm(v_ca, i_c, c_ca, T)
+    def __init__(self, v_ca_a , i_c_a , c_ca_a , T):
+        self.params = diode_model_params_isotherm(v_ca_a , i_c_a , c_ca_a , T)
         self.i_s = self.params['I_S']
         self.m = self.params['m']
         self.r_s = self.params['R_S']
@@ -45,12 +45,12 @@ class DiodeModelIsotherm:
         # TODO: Makes sense as class attribute?
         self.label_r = 'r_D = d(V_CA)/d(I_C)'
 
-    def calc_ic_ideal_diode_a(self, v_ca):
+    def calc_ic_ideal_diode_a(self, v_ca_a ):
         """Ideal diode current array as a function of a diode voltage.
 
         TODO More efficient solution than np.vectorize()?
         Args:
-            v_ca (float array): Cathode-Anode voltage [V].
+            v_ca_a  (float array): Cathode-Anode voltage [V].
 
         Returns:
             (float array): Diode current I_C [A]
@@ -61,28 +61,28 @@ class DiodeModelIsotherm:
                  - 1)
             return i_c
         ideal_diode_eq_self_vector = np.vectorize(ideal_diode_eq_self)
-        i_c_ideal_diode_a = ideal_diode_eq_self_vector(v_ca)
+        i_c_ideal_diode_a = ideal_diode_eq_self_vector(v_ca_a )
         
-        i_c_ideal_diode_a_old = np.zeros(len(v_ca))
+        i_c_ideal_diode_a_old = np.zeros(len(v_ca_a ))
         for i in range(len(i_c_ideal_diode_a_old)):
-            i_c_ideal_diode_a_old[i] = ideal_diode_eq(v_ca[i], self.i_s, 
+            i_c_ideal_diode_a_old[i] = ideal_diode_eq(v_ca_a [i], self.i_s, 
                 self.m, self.T)
         return i_c_ideal_diode_a
 
 
-    def calc_ic_diode_ohmic_a(self, v_ca):
+    def calc_ic_diode_ohmic_a(self, v_ca_a ):
         """Current array from an ideal diode in series with a resistor.
 
         TODO Check input
         Args:
-            v_ca (float array): Cathode-Anode voltage [V].
+            v_ca_a  (float array): Cathode-Anode voltage [V].
 
         Returns:
             (float array): Diode current I_C [A]
         """
-        i_c_r = np.zeros(len(v_ca))
+        i_c_r = np.zeros(len(v_ca_a ))
         for i in range(len(i_c_r)):
-            i_c_r[i] = i_c_eq_d_r(v_ca[i], self.i_s, self.m, self.T, self.r_s)
+            i_c_r[i] = i_c_eq_d_r(v_ca_a [i], self.i_s, self.m, self.T, self.r_s)
         return i_c_r
 
     def calc_c_diode_a(self, i_c_r):
@@ -90,7 +90,7 @@ class DiodeModelIsotherm:
 
         TODO Check input
         Args:
-            v_ca (float array): Cathode-Anode voltage [V].
+            v_ca_a  (float array): Cathode-Anode voltage [V].
 
         Returns:
             (float array): Diode capacitance C_CA [A]
@@ -102,14 +102,14 @@ class DiodeModelIsotherm:
 
 
 class DiodeModel(DiodeModelIsotherm):
-    def __init__(self, v_ca, i_c, c_ca, T, T_i_s_a, i_s_temp_a ,):
+    def __init__(self, v_ca_a , i_c_a , c_ca_a , T, T_i_s_a, i_s_temp_a ,):
         """Diode model with temperature dependence of saturation current.
 
         TODO Calculation
         Args:
-            v_ca ([type]): [description]
-            i_c ([type]): [description]
-            c_ca ([type]): [description]
+            v_ca_a  ([type]): [description]
+            i_c_a  ([type]): [description]
+            c_ca_a  ([type]): [description]
             T ([type]): [description]
             T_i_s_a (float array): 
                 Temperatures [K] at which I_S was estimated
@@ -117,7 +117,7 @@ class DiodeModel(DiodeModelIsotherm):
                 Array of estimated I_S at temperatures T_i_s_a
         """
         # Extends __init__() of DiodeModelIsotherm
-        DiodeModelIsotherm.__init__(self, v_ca, i_c, c_ca, T)
+        DiodeModelIsotherm.__init__(self, v_ca_a , i_c_a , c_ca_a , T)
         # TODO Ensure reasonable results for I_S temperature coefficient.
         # self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a, 
         #                                                 i_s_temp_a)
@@ -154,14 +154,14 @@ def process_diode_measurement(measurements_fname='data.json',
     models = []
     #TODO Guarantee correct order of dict entries for Python < 3.7
     for measurement in measurements.items():
-        v_ca = measurement[1]['V_CA'][:]
-        i_c = measurement[1]['I_C'][:]
-        c_ca =  measurement[1]['C_CA'][:]
+        v_ca_a  = measurement[1]['V_CA'][:]
+        i_c_a  = measurement[1]['I_C'][:]
+        c_ca_a  =  measurement[1]['C_CA'][:]
         T = float(measurement[0][1:5])     # e.g. measurement[0] = "T298.0K"
-        model = DiodeModelIsotherm(v_ca, i_c, c_ca, T)
+        model = DiodeModelIsotherm(v_ca_a , i_c_a , c_ca_a , T)
         models.append(model)
-        plot_vca_ic(v_ca, i_c, model)
-        plot_vca_cca(v_ca, i_c, c_ca, model)
+        plot_vca_ic(v_ca_a , i_c_a , model)
+        plot_vca_cca(v_ca_a , i_c_a , c_ca_a , model)
  
     i_s_temp_a  = np.zeros(len(models))     # Array of saturation currents at
     T_i_s_a  = np.zeros(len(models))        # different temperatures
@@ -177,23 +177,23 @@ def process_diode_measurement(measurements_fname='data.json',
         i += 1
         if (290. < mod.T < 310.15):
             print('Measurement series at T =', mod.T, 
-                  ' K has less than 10 K difference to T_nom = 300.15', 
+                  'K has less than 10 K difference to T_nom = 300.15 K', 
                   'and will be used as reference.')
 
-    base_model = DiodeModel(v_ca, i_c, c_ca, T, T_i_s_a, i_s_temp_a)
+    base_model = DiodeModel(v_ca_a , i_c_a , c_ca_a , T, T_i_s_a, i_s_temp_a)
     plot_T_is(T_i_s_a, i_s_temp_a, base_model)
     
     with open(results_fname, 'w') as f:
         json.dump(base_model.params, f, ensure_ascii=True)
 
 
-def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
+def diode_model_params_isotherm(v_ca_a , i_c_a , c_ca_a , T):
     """Extract diode model parameters at a fixed temperature
 
     Args:
-        v_ca (float array): Cathode-Anode voltage [V.]
-        i_c (float array): Diode current [A].
-        c_ca (float array): Diode capacitance [F].
+        v_ca_a  (float array): Cathode-Anode voltage [V.]
+        i_c_a  (float array): Diode current [A].
+        c_ca_a  (float array): Diode capacitance [F].
         T (float): Temperature [K].
 
     Returns:
@@ -202,7 +202,7 @@ def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     # Curve fit where I_c curve is purely exponential
     vca_lim_lower_ic = 0.65
     vca_lim_upper_ic = 0.75
-    i_s, m= ideal_diode_model(v_ca, i_c, vca_lim_lower_ic, vca_lim_upper_ic, T)
+    i_s, m = ideal_diode_model(v_ca_a , i_c_a , vca_lim_lower_ic, vca_lim_upper_ic, T)
 
     print('Model parameters for T = ' + str("{:.1f}".format(T)), 'K: I_S = ' +
           str(i_s) + ' A, m = ' + str(m))
@@ -210,13 +210,13 @@ def diode_model_params_isotherm(v_ca, i_c, c_ca, T):
     # TODO: Is  mean of differential resistance better than simple
     # quotient of differences?
     # Simple difference between V_CA=0.9V, V_C=1.0V
-    r_ohm_simple = (v_ca[70] - v_ca[50])/(i_c[70] - i_c[50])
+    r_ohm_simple = (v_ca_a [70] - v_ca_a [50])/(i_c_a [70] - i_c_a [50])
     print('R_D_simple =', str(r_ohm_simple))
 
     # Calculate C_CA model
     vca_lim_lower_cca = 0.65
     vca_lim_upper_cca = 1.0
-    tt = diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower_cca, vca_lim_upper_cca)
+    tt = diode_capacitance_model(v_ca_a , i_c_a , c_ca_a , vca_lim_lower_cca, vca_lim_upper_cca)
 
     print('Transit time for T = ' + str("{:.1f}".format(T)), 'K: TT =',
           "{:.4g}".format(tt), 's.')

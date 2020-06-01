@@ -81,25 +81,25 @@ def i_c_eq_d_r(v_ca, i_s, m, T, r_S):
         r_S (float): Ohmic diode resistance
 
     Returns:
-        i_c (float array): Diode current
+        i_c_a  (float array): Diode current
     """
     # Ideal diode and ohmic resistance in series:
     # ln((i_c+i_s)/i_s) * v_t + i_c*r_S -v_ca = 0
-    # In [12]: solve(log((x+a)/a)*b+c*x-d, x)
-    # Out[12]: [(-a*c + b*LambertW(a*c*exp((a*c + d)/b)/b))/c]
+    # sympy.solve(log((x+a)/a)*b+c*x-d, x) = [(-a*c + 
+    #       b*LambertW(a*c*exp((a*c + d)/b)/b))/c]
     v_t = (const.k * T *m) / const.e
     i_c = ((-i_s * r_S + v_t * lambertw(i_s*r_S * np.exp((i_s*r_S + v_ca)/v_t)/v_t))/r_S)
     i_c = np.real(i_c)      # Avoid warning; imaginary part is already zero
     return i_c
 
 
-def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,
+def ideal_diode_model(v_ca_a , i_c_a , vca_lim_lower=0.65,
                           vca_lim_upper=0.8, T=298.0):
     """Calculate a best fit model for the Shockley Diode equation
 
     Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
+        v_ca_a  (float array): Cathode-Anode voltage.
+        i_c_a  (float array): Diode current.
         vca_lim_lower (float, optional):
             Lower limit in Volt of range the model is based on.
             Defaults to 0.65.
@@ -111,7 +111,7 @@ def ideal_diode_model(v_ca, i_c, vca_lim_lower=0.65,
         i_s (float): Saturation current (model parameter).
         m (float): Ideality factor (model parameter)
     """
-    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca, i_c,
+    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca_a , i_c_a ,
                                     vca_lim_lower, vca_lim_upper)
 
     log_vector = np.vectorize(np.log)
@@ -138,14 +138,14 @@ def diode_capacitance_TT_eq(i_c, tt):
     return c_ca
 
 
-def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
+def diode_capacitance_model(v_ca_a , i_c_a , c_ca_a , vca_lim_lower=0.65,
                             vca_lim_upper=0.8):
     """Calculate a best fit model for the diffusion capacitance
 
     Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        c_ca (float array): Diode capacitance.
+        v_ca_a  (float array): Cathode-Anode voltage.
+        i_c_a  (float array): Diode current.
+        c_ca_a  (float array): Diode capacitance.
         vca_lim_lower (float, optional):
             Lower limit in Volt of range the model is based on.
             Defaults to 0.65.
@@ -156,9 +156,9 @@ def diode_capacitance_model(v_ca, i_c, c_ca, vca_lim_lower=0.65,
     Returns:
         tt (float): Transit time.
     """
-    v_ca_cropped, c_ca_cropped = crop_data_range_to_x(v_ca, c_ca,
+    v_ca_cropped, c_ca_cropped = crop_data_range_to_x(v_ca_a , c_ca_a ,
                                             vca_lim_lower, vca_lim_upper)
-    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca, i_c,
+    v_ca_cropped, i_c_cropped = crop_data_range_to_x(v_ca_a , i_c_a ,
                                             vca_lim_lower, vca_lim_upper)
     # Map to log to reduce numerical error
     # log_vector = np.vectorize(np.log)
@@ -259,16 +259,16 @@ def diode_saturation_current_0(i_s, T):
     return i_s_0
 
 
-def calc_rd_deriv_a(v_ca, i_c):
+def calc_rd_deriv_a(v_ca_a , i_c_a ):
     """Resistance array as a derivative of voltage over current.
 
     TODO Check input
     Args:
-        v_ca (float array): Cathode-Anode voltage [V].
-        i_c (float array): Diode current.
+        v_ca_a  (float array): Cathode-Anode voltage [V].
+        i_c_a  (float array): Diode current.
 
     Returns:
         (float array): Differential resistance r_D [Ohm]
     """
-    r_D = np.gradient(v_ca, i_c)
+    r_D = np.gradient(v_ca_a , i_c_a )
     return r_D

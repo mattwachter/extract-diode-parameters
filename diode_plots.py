@@ -2,22 +2,22 @@
 import matplotlib.pyplot as plt
 from diode_equations import  calc_rd_deriv_a
 
-def plot_vca_cca(v_ca, i_c, c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
     """Plot diode capacitance over diode voltage
 
     Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
-        v_ca (float array): Diode capacitance.
+        v_ca_a (float array): Cathode-Anode voltage.
+        i_c_a  (float array): Diode current.
+        c_ca_a (float array): Diode capacitance.
         T (float): Temperature in Kelvin, defaults to 298.0
         plot_dir (string): Optional: Folder in which plots are saved.
     """
-    i_c_r = model.calc_ic_diode_ohmic_a(v_ca)
-    c_ca_model = model.calc_c_diode_a(i_c_r)
+    i_c_r_a  = model.calc_ic_diode_ohmic_a(v_ca_a)
+    c_ca_model = model.calc_c_diode_a(i_c_r_a )
 
     # Plot IC over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.plot(v_ca, i_c, '.', label='I_C')
+    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='I_C')
     ax1.set_ylabel('I_C [A]')
 
     # Prepare Labels of ax1
@@ -27,8 +27,8 @@ def plot_vca_cca(v_ca, i_c, c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/
 
     # Plot C_CA over V_CA
     ax2 = ax1.twinx()
-    label_cca = ax2.plot(v_ca, c_ca, 'rx', label='C_CA')
-    lab_cca_model = ax2.plot(v_ca, c_ca_model, 'g-',
+    label_cca = ax2.plot(v_ca_a, c_ca, 'rx', label='C_CA')
+    lab_cca_model = ax2.plot(v_ca_a, c_ca_model, 'g-',
                              label=model.label_cca_model)
     ax2.set_ylabel('C_CA [F]')
 
@@ -42,26 +42,26 @@ def plot_vca_cca(v_ca, i_c, c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/
     plt.clf()
 
 
-def plot_vca_ic(v_ca, i_c, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
     """Plot diode current over diode voltage
 
     Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
+        v_ca_a (float array): Cathode-Anode voltage.
+        i_c_a  (float array): Diode current.
         T (float): Temperature in Kelvin, defaults to 298.0
         plot_dir (string): Optional: Folder in which plots are saved.
     """
     # Calculate the model data
-    i_c_ideal_diode_model = model.calc_ic_ideal_diode_a(v_ca)
-    r_D = calc_rd_deriv_a(v_ca, i_c)
-    i_c_r = model.calc_ic_diode_ohmic_a(v_ca)
+    i_c_ideal_diode_model_a = model.calc_ic_ideal_diode_a(v_ca_a)
+    r_D_a = calc_rd_deriv_a(v_ca_a, i_c_a )
+    i_c_r_a  = model.calc_ic_diode_ohmic_a(v_ca_a)
 
     # Plot I_C and models over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.semilogy(v_ca, i_c, '.', label='I_C')
-    label_ic_model = ax1.semilogy(v_ca, i_c_ideal_diode_model, '-b',
+    label_ic = ax1.semilogy(v_ca_a, i_c_a , '.', label='I_C')
+    label_ic_model = ax1.semilogy(v_ca_a, i_c_ideal_diode_model_a, '-b',
                                   label=model.label_ideal_diode_model)
-    label_ic_r_model = ax1.semilogy(v_ca, i_c_r, '--r',
+    label_ic_r_model = ax1.semilogy(v_ca_a, i_c_r_a , '--r',
                                     label=model.label_diode_ohmic)
     ax1.set_xlabel('V_CA [V]')
     ax1.set_ylabel('I_C [A]')
@@ -75,7 +75,7 @@ def plot_vca_ic(v_ca, i_c, model, plot_dir='/home/matt/Nextcloud/Studium/Hauptse
     axr = ax1.twinx()
     axr.set_ylabel('Resistance [Ohm]')
     axr.set_ylim([0, 10])
-    label_r = axr.plot(v_ca, r_D, 'g-.', label=model.label_r)
+    label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label=model.label_r)
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
 
     fname_pdf = plot_dir + '/VCA_IC_T' + "{:.1f}".format(model.T) + '.png'
@@ -86,8 +86,8 @@ def plot_T_is(T_a, i_s_a, model, plot_dir='/home/matt/Nextcloud/Studium/Hauptsem
     """Plot diode saturation current over temperature
 
     Args:
-        v_ca (float array): Cathode-Anode voltage.
-        i_c (float array): Diode current.
+        v_ca_a (float array): Cathode-Anode voltage.
+        i_c_a  (float array): Diode current.
         T (float): Temperature in Kelvin, defaults to 298.0
         plot_dir (string): Optional: Folder in which plots are saved.
     """
