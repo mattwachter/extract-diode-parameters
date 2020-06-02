@@ -2,7 +2,7 @@
 import matplotlib.pyplot as plt
 from diode_equations import  calc_rd_deriv_a
 
-def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
     """Plot diode capacitance over diode voltage
 
     Args:
@@ -42,7 +42,7 @@ def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Stu
     plt.clf()
 
 
-def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
     """Plot diode current over diode voltage
 
     Args:
@@ -82,7 +82,7 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
     plt.savefig(fname_pdf)
     plt.clf()
 
-def plot_T_is(T_a, i_s_a, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures'):
+def plot_T_is(T_a, i_s_a, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
     """Plot diode saturation current over temperature
 
     Args:
