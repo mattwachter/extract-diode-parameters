@@ -14,7 +14,6 @@ from diode_equations import  *
 from diode_plots import  *
 from diode_utils import  *
 
-# TODO All arrays with suffix _a
 class DiodeModelIsotherm:
     """
     TODO Define vca_lim variables at class level?
@@ -30,6 +29,8 @@ class DiodeModelIsotherm:
         self.vca_lim_upper_ic = self.params['vca_lim_upper_ic']
         self.vca_lim_lower_cca = self.params['vca_lim_lower_cca']
         self.vca_lim_upper_cca = self.params['vca_lim_upper_cca']
+        self.vca_lim_lower_r = self.params['vca_lim_lower_r']
+        self.vca_lim_upper_r = self.params['vca_lim_upper_r']
         # TODO: fname_pdf (ic, cca) also as class attribute?
         self.label_ideal_diode_model=(
             'I_C_ideal = I_S * (exp (V_CA/(V_T*m)) -1):\n I_S = ' +
@@ -37,7 +38,9 @@ class DiodeModelIsotherm:
             '\n based on ' + str(self.vca_lim_lower_ic) + 'V <= V_CA <= ' +
             str(self.vca_lim_upper_ic) + 'V')
         self.label_diode_ohmic = ('I_C_model (R_S = ' +
-            "{:.4g}".format(self.r_s) + ' Ohm)')
+            "{:.4g}".format(self.r_s) + ' $\Omega$)'+ '\n based on ' +
+            str(self.vca_lim_lower_r) + 'V <= V_CA <= ' +
+            str(self.vca_lim_upper_r) + 'V')
         self.label_cca_model = ('C_CA_model = TT * I_C_model\n TT =' +
             "{:.4g}".format(self.tt) + 's\n based on ' +
             str(self.vca_lim_lower_cca) + 'V <= V_CA <= ' +
@@ -146,7 +149,13 @@ def process_diode_measurement(measurements_fname='data.json',
     with open(measurements_fname, 'r') as f:
         measurements = json.load(f)
 
+    plot_measurements_overview(measurements)
+    
     models = []
+    # Prepare variables for temperature dependence of I_S
+    i_s_temp_a  = np.zeros(len(measurements.items()))   # Saturation currents at
+    T_i_s_a  = np.zeros(len(measurements.items()))      # different temperatures
+    i = 0
     #TODO Guarantee correct order of dict entries for Python < 3.7
     for measurement in measurements.items():
         v_ca_a = measurement[1]['V_CA'][:]
@@ -154,28 +163,33 @@ def process_diode_measurement(measurements_fname='data.json',
         c_ca_a  =  measurement[1]['C_CA'][:]
         T = float(measurement[0][1:5])     # e.g. measurement[0] = "T298.0K"
         model = DiodeModelIsotherm(v_ca_a, i_c_a , c_ca_a , T)
-        models.append(model)
         plot_vca_ic(v_ca_a, i_c_a , model)
         plot_vca_cca(v_ca_a, i_c_a , c_ca_a , model)
- 
-    i_s_temp_a  = np.zeros(len(models))     # Array of saturation currents at
-    T_i_s_a  = np.zeros(len(models))        # different temperatures
-    i = 0
-    for mod in models:
-        i_s_0 = diode_saturation_current_0(mod.i_s, T)
+        models.append(model)
+        i_s_0 = diode_saturation_current_0(model.i_s, T)
         print('I_S = ', model.i_s, 'I_S0_model =', i_s_0)  
-        i_s_model = diode_saturation_current(i_s_0, mod.T)
-        i_s_temp_a[i] = mod.i_s
-        T_i_s_a[i] = mod.T 
-        print(' For T = ' + str(mod.T) + 'K: I_S = ' + str(mod.i_s) +
+        i_s_model = diode_saturation_current(i_s_0, model.T)
+        i_s_temp_a[i] = model.i_s
+        T_i_s_a[i] = model.T 
+        print(' For T = ' + str(model.T) + 'K: I_S = ' + str(model.i_s) +
               ' A, I_S_model(T) = ' + str(i_s_model) + ' A.')
         i += 1
-        if (290. < mod.T < 310.15):
-            print('Measurement series at T =', mod.T, 
+        if (290. < model.T < 310.15):
+            print('Measurement series at T =', model.T, 
                   'K has less than 10 K difference to T_nom = 300.15 K', 
                   'and will be used as reference.')
+            # Set variables for base measurements (T ~ 300K)
+            v_ca_a_0 = v_ca_a
+            i_c_a_0 = i_c_a
+            c_ca_a_0 = c_ca_a
+            # Plots for presentation, optional
+            plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca_a , model)
+            plot_vca_ic_ideal(v_ca_a, i_c_a , model)
+            plot_vca_ic_r(v_ca_a, i_c_a , model)
 
-    base_model = DiodeModel(v_ca_a, i_c_a , c_ca_a , T, T_i_s_a, i_s_temp_a)
+    base_model = DiodeModel(v_ca_a_0, i_c_a_0 , c_ca_a_0 , T, T_i_s_a, 
+                            i_s_temp_a)
+    # Plot for presentation, optional
     plot_T_is(T_i_s_a, i_s_temp_a, base_model)
     
     with open(results_fname, 'w') as f:
@@ -199,21 +213,27 @@ def diode_model_params_isotherm(v_ca_a, i_c_a , c_ca_a , T):
     vca_lim_upper_ic = 0.75
     i_s, m = ideal_diode_model(v_ca_a, i_c_a , vca_lim_lower_ic, vca_lim_upper_ic, T)
 
-    print('Model parameters for T = ' + str("{:.1f}".format(T)), 'K: I_S = ' +
+    print('Model parameters for T = ' + str("{:.0f}".format(T)), 'K: I_S = ' +
           str(i_s) + ' A, m = ' + str(m))
 
+    # Calculate R_S model
     # TODO: Is  mean of differential resistance better than simple
     # quotient of differences?
-    # Simple difference between V_CA=0.9V, V_C=1.0V
-    r_ohm_simple = (v_ca_a[70] - v_ca_a[50])/(i_c_a [70] - i_c_a [50])
-    print('R_D_simple =', str(r_ohm_simple))
+    # Simple difference between V_CA=0.9V, V_CA=1.0V
+    # Curve fit where I_c curve is purely linear
+    vca_lim_lower_r = 0.9
+    vca_lim_upper_r = 1.0
+    vca_lim_lower_r_i = np.where(np.isclose(v_ca_a, vca_lim_lower_r, rtol=1e-3))[0][0]
+    vca_lim_upper_r_i =  np.where(np.isclose(v_ca_a, vca_lim_upper_r, rtol=1e-3))[0][0]
+    r_ohm_simple = (v_ca_a[vca_lim_upper_r_i] - v_ca_a[vca_lim_lower_r_i])/(i_c_a [vca_lim_upper_r_i] - i_c_a [vca_lim_lower_r_i])
+    print('R_S_simple =', str(r_ohm_simple))
 
     # Calculate C_CA model
     vca_lim_lower_cca = 0.65
     vca_lim_upper_cca = 1.0
     tt = diode_capacitance_model(v_ca_a, i_c_a , c_ca_a , vca_lim_lower_cca, vca_lim_upper_cca)
 
-    print('Transit time for T = ' + str("{:.1f}".format(T)), 'K: TT =',
+    print('Transit time for T = ' + str("{:.0f}".format(T)), 'K: TT =',
           "{:.4g}".format(tt), 's.')
 
     # TODO: Explanations of parameters?
@@ -222,6 +242,8 @@ def diode_model_params_isotherm(v_ca_a, i_c_a , c_ca_a , T):
                     'vca_lim_upper_ic': vca_lim_upper_ic,
                     'vca_lim_lower_cca': vca_lim_lower_cca,
                     'vca_lim_upper_cca': vca_lim_upper_cca,
+                    'vca_lim_lower_r': vca_lim_lower_r,
+                    'vca_lim_upper_r': vca_lim_upper_r,
                     }
     return model_params
 
