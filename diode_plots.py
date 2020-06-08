@@ -23,8 +23,8 @@ def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium
     """
     # Plot I_C over V_CA for all measurement runs
     fig, ax1 = plt.subplots()
-    ax1.set_xlabel('$ V_{CA} $ [V]')
-    ax1.set_ylabel('$ I_{C} $ [A]')
+    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_ylabel('I_C[A]')
     labelnames = []
     for meas in meas_dict.items():
         v_ca_a = meas[1]['V_CA'][:]
@@ -39,8 +39,8 @@ def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium
     
     # Plot V_CA over V_CA for all measurement runs
     fig, ax1 = plt.subplots()
-    ax1.set_xlabel('$ V_{CA} $ [V]')
-    ax1.set_ylabel('$ C_{CA} $ [F]')
+    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_ylabel('C_CA [F]')
     labelnames = []
     for meas in meas_dict.items():
         v_ca_a = meas[1]['V_CA'][:]
@@ -69,9 +69,9 @@ def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Stu
 
     # Plot IC over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='$I_C$')
-    ax1.set_ylabel('$ I_C $ [A]')
-    ax1.set_xlabel('$ V_{CA} $ [V]')
+    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='I_C')
+    ax1.set_ylabel('I_C [A]')
+    ax1.set_xlabel('V_CA [V]')
 
     # Prepare Labels of ax1
     labelnames =  label_ic
@@ -80,10 +80,10 @@ def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Stu
 
     # Plot C_CA over V_CA
     ax2 = ax1.twinx()
-    label_cca = ax2.plot(v_ca_a, c_ca, 'rx', label='$C_{CA}$')
+    label_cca = ax2.plot(v_ca_a, c_ca, 'rx', label='C_CA')
     lab_cca_model = ax2.plot(v_ca_a, c_ca_model, 'g-',
                              label=model.label_cca_model)
-    ax2.set_ylabel('$ C_{CA} $ [F]')
+    ax2.set_ylabel('C_CA [F]')
 
     # Prepare Labels of ax2
     labelnames =  label_cca + lab_cca_model
@@ -111,13 +111,13 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
 
     # Plot I_C and models over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.semilogy(v_ca_a, i_c_a , '.', label='$I_C$')
+    label_ic = ax1.semilogy(v_ca_a, i_c_a , '.', label='I_C')
     label_ic_model = ax1.semilogy(v_ca_a, i_c_ideal_diode_model_a, '-b',
                                   label=model.label_ideal_diode_model)
     label_ic_r_model = ax1.semilogy(v_ca_a, i_c_r_a , '--r',
                                     label=model.label_diode_ohmic)
-    ax1.set_xlabel('$ V_{CA} $ [V]')
-    ax1.set_ylabel('$ I_C $  [A]')
+    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_ylabel('I_C  [A]')
 
     # Prepare I_C Labels of ax1
     labelnames =  label_ic + label_ic_model + label_ic_r_model
@@ -126,7 +126,7 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
 
     # Plot r_D over V_CA
     axr = ax1.twinx()
-    axr.set_ylabel('$R$ [$\Omega$]')
+    axr.set_ylabel('R [$\Omega$]')
     axr.set_ylim([0, 10])
     label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label=model.label_r)
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
@@ -158,9 +158,9 @@ def plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/m
 
     # Plot IC over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='$I_C$')
-    ax1.set_ylabel('$ I_C $ [A]')
-    ax1.set_xlabel('$ V_{CA} $ [V]')
+    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='I_C')
+    ax1.set_ylabel('I_C [A]')
+    ax1.set_xlabel('V_CA [V]')
 
     # Prepare Labels of ax1
     labelnames =  label_ic
@@ -169,10 +169,10 @@ def plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/m
 
     # Plot C_CA over V_CA
     ax2 = ax1.twinx()
-    label_cca = ax2.plot(v_ca_a, c_ca, 'rx', label='$C_CA$ (measured)')
+    label_cca = ax2.plot(v_ca_a, c_ca, 'rx', label='C_CA(measured)')
     lab_cca_model = ax2.plot(v_ca_a, c_ca_model, 'g-',
-                             label='Curve Fitted Model $C_d$')
-    ax2.set_ylabel('$ C_{CA} $ [F]')
+                             label='Curve Fitted Model C_d')
+    ax2.set_ylabel('C_CA [F]')
 
     # Prepare Labels of ax2
     labelnames =  label_cca + lab_cca_model
@@ -206,8 +206,8 @@ def plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Stud
     label_ic = ax1.plot(v_ca_a, i_c_a_log , '.', label='Data')
     label_ic_model = ax1.plot(v_0_to_1, i_c_ideal_diode_model_a_log, '-r',
                                   label='Model')
-    ax1.set_xlabel('$ U_{D} $ [V]')
-    ax1.set_ylabel('ln($ I_D $)  [A]')
+    ax1.set_xlabel('U_D [V]')
+    ax1.set_ylabel('ln(I_D)  [A]')
     title = 'T = ' + str(model.T) + 'K'
     fig.suptitle(title, fontsize=12)
 
@@ -236,9 +236,9 @@ def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/
 
     # Plot I_C and models over V_CA
     fig, ax1 = plt.subplots()
-    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='$I_D (measured)$')
-    ax1.set_xlabel('$ U_{D} $ [V]')
-    ax1.set_ylabel('$ I_D $  [A]')
+    label_ic = ax1.plot(v_ca_a, i_c_a , '.', label='I_D (measured)')
+    ax1.set_xlabel('U_D [V]')
+    ax1.set_ylabel('I_D  [A]')
 
     # Prepare I_C Labels of ax1
     labelnames =  label_ic
@@ -247,9 +247,9 @@ def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/
 
     # Plot r_D over V_CA
     axr = ax1.twinx()
-    axr.set_ylabel('$R$ [$\Omega$]')
+    axr.set_ylabel('R [$\Omega$]')
     axr.set_ylim([0, 10])
-    label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label='$r_S = dU_D/dI_D')
+    label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label='r_S = dU_D/dI_D')
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
 
     fname_plot = plot_dir + '/VCA_IC_R.png'
@@ -271,11 +271,11 @@ def plot_T_is(T_a, i_s_a, model, plot_dir='/home/matt/Nextcloud/Studium/Hauptsem
 
     # Plot I_C and models over V_CA
     fig, ax1 = plt.subplots()
-    label_is = ax1.semilogy(T_a, i_s_a, 'xr', label='$I_S$ (determined separately for each temperatures)')
+    label_is = ax1.semilogy(T_a, i_s_a, 'xr', label='I_S (determined separately for each temperatures)')
     label_is_model = ax1.semilogy(T_model_a, i_s_model_a, '-b',
-                                  label='$I_S(T)$ model')
+                                  label='I_S(T) model')
     ax1.set_xlabel('T [K]')
-    ax1.set_ylabel('$ I_S $ [A]')
+    ax1.set_ylabel('I_S [A]')
 
     # Prepare I_C Labels of ax1
     labelnames =  label_is + label_is_model

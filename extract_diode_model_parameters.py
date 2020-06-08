@@ -178,7 +178,7 @@ def process_diode_measurement(measurements_fname='data.json',
             print('Measurement series at T =', model.T, 
                   'K has less than 10 K difference to T_nom = 300.15 K', 
                   'and will be used as reference.')
-            # Set variables for base measurements (T ~ 300K)
+            # Set variables for base measurements (T ~ T_0 = 300.15K)
             v_ca_a_0 = v_ca_a
             i_c_a_0 = i_c_a
             c_ca_a_0 = c_ca_a
