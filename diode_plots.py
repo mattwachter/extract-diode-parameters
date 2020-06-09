@@ -5,7 +5,7 @@ from diode_equations import  calc_rd_deriv_a
 
 
 
-def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_measurements_overview(meas_dict, plot_dir='plots'):
     """Plot all measured data as an overview
 
         meas_run(run_name, data) (tuple(string, dict)): Measurement run
@@ -54,7 +54,7 @@ def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium
     plt.clf()
 
 
-def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='plots'):
     """Plot diode capacitance over diode voltage
 
     Args:
@@ -95,7 +95,7 @@ def plot_vca_cca(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Stu
     plt.clf()
 
 
-def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='plots'):
     """Plot diode current over diode voltage
 
     Args:
@@ -143,7 +143,7 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
     plt.clf()
 
 
-def plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca, model, plot_dir='plots'):
     """Plot diode capacitance over diode voltage
 
     Args:
@@ -184,7 +184,7 @@ def plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca, model, plot_dir='/home/m
     plt.clf()
 
 
-def plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir='plots'):
     """Plot diode current over diode voltage
 
     Args:
@@ -222,7 +222,7 @@ def plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Stud
 
 
 
-def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='plots'):
     """Plot diode current over diode voltage
 
     Args:
@@ -257,7 +257,7 @@ def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/
     plt.clf()
 
 
-def plot_T_is(T_a, i_s_a, model, plot_dir='/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/Bericht/figures/plots'):
+def plot_T_is(T_a, i_s_a, model, plot_dir='plots'):
     """Plot diode saturation current over temperature
 
     Args:

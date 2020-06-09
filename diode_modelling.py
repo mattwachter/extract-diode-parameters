@@ -177,7 +177,6 @@ def diode_model_params_isotherm(v_ca_a, i_c_a , c_ca_a , T):
     return model_params
     
 
-# TODO Separate files for modelling functions?!
 def i_s_temp_dependence_model(T_i_s_a, i_s_temp_a ):
     """Determine temperature dependence of diode saturation currrent.
 

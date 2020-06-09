@@ -14,7 +14,7 @@ from diode_modelling import *
 
 
 def process_diode_measurement(measurements_fname='data.json', 
-    results_fname='model.json', plots_dir='figures' ):
+    results_fname='model.json', plot_dir='figures' ):
     """Extract diode model parameters from JSON file with measurements.
 
     Structure of imported JSON File:
@@ -47,8 +47,8 @@ def process_diode_measurement(measurements_fname='data.json',
         c_ca_a  =  measurement[1]['C_CA'][:]
         T = float(measurement[0][1:5])     # e.g. measurement[0] = "T298.0K"
         model = DiodeModelIsotherm(v_ca_a, i_c_a , c_ca_a , T)
-        plot_vca_ic(v_ca_a, i_c_a , model)
-        plot_vca_cca(v_ca_a, i_c_a , c_ca_a , model)
+        plot_vca_ic(v_ca_a, i_c_a , model, plot_dir=plot_dir)
+        plot_vca_cca(v_ca_a, i_c_a , c_ca_a , model, plot_dir=plot_dir)
         models.append(model)
         i_s_0 = diode_saturation_current_0(model.i_s, T)
         print('I_S = ', model.i_s, 'I_S0_model =', i_s_0)  
@@ -67,21 +67,26 @@ def process_diode_measurement(measurements_fname='data.json',
             i_c_a_0 = i_c_a
             c_ca_a_0 = c_ca_a
             # Plots for presentation, optional
-            plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca_a , model)
-            plot_vca_ic_ideal(v_ca_a, i_c_a , model)
-            plot_vca_ic_r(v_ca_a, i_c_a , model)
+            plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca_a , model, 
+                                          plot_dir=plot_dir)
+            plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir=plot_dir)
+            plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir=plot_dir)
 
     base_model = DiodeModel(v_ca_a_0, i_c_a_0 , c_ca_a_0 , T, T_i_s_a, 
                             i_s_temp_a)
     # Plot for presentation, optional
-    plot_T_is(T_i_s_a, i_s_temp_a, base_model)
+    plot_T_is(T_i_s_a, i_s_temp_a, base_model, plot_dir=plot_dir)
     
     with open(results_fname, 'w') as f:
         json.dump(base_model.params, f, ensure_ascii=True)
 
 
 def main():
-  process_diode_measurement('/home/matt/Nextcloud/Studium/HauptseminarMikroNanoelektronik/PythonExtraction/data.json')
+    with open('file_names.json', 'r') as f:
+        fnames = json.load(f)
+    
+    process_diode_measurement(fnames["data"], results_fname=fnames["results"],
+                               plot_dir=fnames["plot_dir"])
 
 
 # Do not execute main() when imported as module
