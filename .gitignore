@@ -1,0 +1,5 @@
+.vscode
+*.pyc
+__pycache__
+model.json
+file_names-custom.json
