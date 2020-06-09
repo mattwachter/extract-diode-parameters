@@ -23,7 +23,7 @@ def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium
     """
     # Plot I_C over V_CA for all measurement runs
     fig, ax1 = plt.subplots()
-    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_xlabel('V_CA [V]')
     ax1.set_ylabel('I_C[A]')
     labelnames = []
     for meas in meas_dict.items():
@@ -39,7 +39,7 @@ def plot_measurements_overview(meas_dict, plot_dir='/home/matt/Nextcloud/Studium
     
     # Plot V_CA over V_CA for all measurement runs
     fig, ax1 = plt.subplots()
-    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_xlabel('V_CA [V]')
     ax1.set_ylabel('C_CA [F]')
     labelnames = []
     for meas in meas_dict.items():
@@ -116,7 +116,7 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
                                   label=model.label_ideal_diode_model)
     label_ic_r_model = ax1.semilogy(v_ca_a, i_c_r_a , '--r',
                                     label=model.label_diode_ohmic)
-    ax1.set_xlabel('V_CA} [V]')
+    ax1.set_xlabel('V_CA [V]')
     ax1.set_ylabel('I_C  [A]')
 
     # Prepare I_C Labels of ax1
@@ -136,7 +136,7 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/Ha
     plt.axvspan(model.vca_lim_lower_r, model.vca_lim_upper_r, color='g', alpha=0.3)
 
     title = 'T = ' + str(model.T) + 'K'
-    fig.suptitle(title, fontsize=12)
+    # fig.suptitle(title, fontsize=12)
     
     fname_plot = plot_dir + '/VCA_IC_T' + "{:.0f}".format(model.T) + '.png'
     plt.savefig(fname_plot)
@@ -249,7 +249,7 @@ def plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir='/home/matt/Nextcloud/Studium/
     axr = ax1.twinx()
     axr.set_ylabel('R [$\Omega$]')
     axr.set_ylim([0, 10])
-    label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label='r_S = dU_D/dI_D')
+    label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label=' r_D = dU_D/dI_D')
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
 
     fname_plot = plot_dir + '/VCA_IC_R.png'
