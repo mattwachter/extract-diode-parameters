@@ -14,7 +14,7 @@ def plot_measurements_overview(meas_dict, plot_dir='plots'):
         Dictionary of diode capacitance ('C_CA'),
         current ('I_C) and voltage ('V_CA') values
     Args:
-        measurement_dict (dict): 
+        measurement_dict (dict):
             meas_run(run_name, data) (tuple(string, dict)): Measurement run
             run_name (string): Name of test run, e.g. "T298.0K"
             data[phys_quantity: values] (dict[string: list]):
@@ -36,7 +36,7 @@ def plot_measurements_overview(meas_dict, plot_dir='plots'):
     fname_plot = plot_dir + '/VCA_IC.png'
     plt.savefig(fname_plot)
     plt.clf()
-    
+
     # Plot V_CA over V_CA for all measurement runs
     fig, ax1 = plt.subplots()
     ax1.set_xlabel('V_CA [V]')
@@ -130,14 +130,14 @@ def plot_vca_ic(v_ca_a, i_c_a , model, plot_dir='plots'):
     axr.set_ylim([0, 10])
     label_r = axr.plot(v_ca_a, r_D_a, 'g-.', label=model.label_r)
     axr.legend(label_r, loc='lower right')  # TODO: avoid 'Line2D()
-    
+
     # Mark sections that form the basis of the i_c_r model
     plt.axvspan(model.vca_lim_lower_ic, model.vca_lim_upper_ic, color='b', alpha=0.3)
     plt.axvspan(model.vca_lim_lower_r, model.vca_lim_upper_r, color='g', alpha=0.3)
 
     title = 'T = ' + str(model.T) + 'K'
     # fig.suptitle(title, fontsize=12)
-    
+
     fname_plot = plot_dir + '/VCA_IC_T' + "{:.0f}".format(model.T) + '.png'
     plt.savefig(fname_plot)
     plt.clf()
@@ -195,7 +195,7 @@ def plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir='plots'):
     """
     log_vector = np.vectorize(np.log)
     i_c_a_log = log_vector(i_c_a)
-    
+
     # Calculate the model data
     v_0_to_1 = np.linspace(0, 1.0, 201)
     i_c_ideal_diode_model_a = model.calc_ic_ideal_diode_a(v_0_to_1)

@@ -13,7 +13,7 @@ from diode_plots import  *
 from diode_modelling import *
 
 
-def process_diode_measurement(measurements_fname='data.json', 
+def process_diode_measurement(measurements_fname='data.json',
     results_fname='model.json', plot_dir='figures' ):
     """Extract diode model parameters from JSON file with measurements.
 
@@ -34,7 +34,7 @@ def process_diode_measurement(measurements_fname='data.json',
         measurements = json.load(f)
 
     plot_measurements_overview(measurements)
-    
+
     models = []
     # Prepare variables for temperature dependence of I_S
     i_s_temp_a  = np.zeros(len(measurements.items()))   # Saturation currents at
@@ -51,32 +51,32 @@ def process_diode_measurement(measurements_fname='data.json',
         plot_vca_cca(v_ca_a, i_c_a , c_ca_a , model, plot_dir=plot_dir)
         models.append(model)
         i_s_0 = diode_saturation_current_0(model.i_s, T)
-        print('I_S = ', model.i_s, 'I_S0_model =', i_s_0)  
+        print('I_S = ', model.i_s, 'I_S0_model =', i_s_0)
         i_s_model = diode_saturation_current(i_s_0, model.T)
         i_s_temp_a[i] = model.i_s
-        T_i_s_a[i] = model.T 
+        T_i_s_a[i] = model.T
         print(' For T = ' + str(model.T) + 'K: I_S = ' + str(model.i_s) +
               ' A, I_S_model(T) = ' + str(i_s_model) + ' A.')
         i += 1
         if (290. < model.T < 310.15):
-            print('Measurement series at T =', model.T, 
-                  'K has less than 10 K difference to T_nom = 300.15 K', 
+            print('Measurement series at T =', model.T,
+                  'K has less than 10 K difference to T_nom = 300.15 K',
                   'and will be used as reference.')
             # Set variables for base measurements (T ~ T_0 = 300.15K)
             v_ca_a_0 = v_ca_a
             i_c_a_0 = i_c_a
             c_ca_a_0 = c_ca_a
             # Plots for presentation, optional
-            plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca_a , model, 
+            plot_vca_cca_for_presentation(v_ca_a, i_c_a , c_ca_a , model,
                                           plot_dir=plot_dir)
             plot_vca_ic_ideal(v_ca_a, i_c_a , model, plot_dir=plot_dir)
             plot_vca_ic_r(v_ca_a, i_c_a , model, plot_dir=plot_dir)
 
-    base_model = DiodeModel(v_ca_a_0, i_c_a_0 , c_ca_a_0 , T, T_i_s_a, 
+    base_model = DiodeModel(v_ca_a_0, i_c_a_0 , c_ca_a_0 , T, T_i_s_a,
                             i_s_temp_a)
     # Plot for presentation, optional
     plot_T_is(T_i_s_a, i_s_temp_a, base_model, plot_dir=plot_dir)
-    
+
     with open(results_fname, 'w') as f:
         json.dump(base_model.params, f, ensure_ascii=True)
 
@@ -84,7 +84,7 @@ def process_diode_measurement(measurements_fname='data.json',
 def main():
     with open('file_names.json', 'r') as f:
         fnames = json.load(f)
-    
+
     process_diode_measurement(fnames["data"], results_fname=fnames["results"],
                                plot_dir=fnames["plot_dir"])
 

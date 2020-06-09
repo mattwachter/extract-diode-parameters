@@ -85,7 +85,7 @@ def ic_diode_ohmic(v_ca, i_s, m, T, r_S):
     """
     # Ideal diode and ohmic resistance in series:
     # ln((i_c+i_s)/i_s) * v_t + i_c*r_S -v_ca = 0
-    # sympy.solve(log((x+a)/a)*b+c*x-d, x) = [(-a*c + 
+    # sympy.solve(log((x+a)/a)*b+c*x-d, x) = [(-a*c +
     #       b*LambertW(a*c*exp((a*c + d)/b)/b))/c]
     v_t = (const.k * T *m) / const.e
     i_c = ((-i_s * r_S + v_t * lambertw(i_s*r_S * np.exp((i_s*r_S + v_ca)/v_t)/v_t))/r_S)
@@ -173,9 +173,9 @@ def diode_capacitance_model(v_ca_a , i_c_a , c_ca_a , vca_lim_lower=0.65,
 def diode_saturation_current(i_s_0, T):
     """Temperature dependent saturation current.
 
-    As described by Michael Schroter in hicumL2V2p4p0_internal.va  
+    As described by Michael Schroter in hicumL2V2p4p0_internal.va
     (line 1150) for an internal Base collector diode saturation current:
-    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1)) 
+    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1))
     Args:
         i_s_0 (float): I_S [A] at T=300.15K.
         T ([type]): Temperature [K].
@@ -185,7 +185,7 @@ def diode_saturation_current(i_s_0, T):
     """
     zetaci = 0.0                # Line 813
     # Line 824 "Coefficient K1 in T-dependent band-gap equation":
-    f1vg = -1.02377e-4       
+    f1vg = -1.02377e-4
     mg = 3 - const.e * f1vg / const.k
     zetabci = mg + 1 - zetaci   # Line 1025
     vgc = 1.17  # Collector bandgap voltage silicon
@@ -203,9 +203,9 @@ def diode_saturation_current_log(i_s_0_log, T, zeta):
     """Log of temperature dependent saturation current.
 
     Linear equation to be used for curve fitting.
-    As described by Michael Schroter in hicumL2V2p4p0_internal.va  
+    As described by Michael Schroter in hicumL2V2p4p0_internal.va
     (line 1150) for an internal Base collector diode saturation current:
-    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1)) 
+    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1))
     Args:
         i_s_0 (float): I_S [A] at T=300.15K.
         T ([type]): Temperature [K].
@@ -215,7 +215,7 @@ def diode_saturation_current_log(i_s_0_log, T, zeta):
     """
     # zetaci = 0.0                # Line 813
     # # Line 824 "Coefficient K1 in T-dependent band-gap equation":
-    # f1vg = -1.02377e-4       
+    # f1vg = -1.02377e-4
     # mg = 3 - const.e * f1vg / const.k
     # zetabci = mg + 1 - zetaci   # Line 1025
     # vgc = 1.17  # Bandgap voltage silicon
@@ -231,10 +231,10 @@ def diode_saturation_current_log(i_s_0_log, T, zeta):
 def diode_saturation_current_0(i_s, T):
     """Saturation current at nominal temperature.
 
-    As described by Michael Schroter in hicumL2V2p4p0_internal.va  
+    As described by Michael Schroter in hicumL2V2p4p0_internal.va
     (line 1150) for an internal Base collector diode saturation current:
-    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1)) 
-    TODO Reacts too strongly to slight deviations in temperature 
+    ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1))
+    TODO Reacts too strongly to slight deviations in temperature
         (298.0K vs 300.15K)
     Args:
         i_s (float): I_S [A] at T.
@@ -245,7 +245,7 @@ def diode_saturation_current_0(i_s, T):
     """
     zetaci = 0.0                # Line 813
     # Line 824 "Coefficient K1 in T-dependent band-gap equation":
-    f1vg = -1.02377e-4       
+    f1vg = -1.02377e-4
     mg = 3 - const.e * f1vg / const.k
     zetabci = mg + 1 - zetaci   # Line 1025
     vgc = 1.17  # Bandgap voltage silicon

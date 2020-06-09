@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 import scipy.constants as const
 from scipy.special import lambertw
 # Use diode functions of Python files in working directory
-from diode_equations import  *  
+from diode_equations import  *
 
 
 class DiodeModelIsotherm:
@@ -104,18 +104,18 @@ class DiodeModel(DiodeModelIsotherm):
             i_c_a  ([type]): [description]
             c_ca_a  ([type]): [description]
             T ([type]): [description]
-            T_i_s_a (float array): 
+            T_i_s_a (float array):
                 Temperatures [K] at which I_S was estimated
-            i_s_temp_a  (float array): 
+            i_s_temp_a  (float array):
                 Array of estimated I_S at temperatures T_i_s_a
         """
         # Extends __init__() of DiodeModelIsotherm
         DiodeModelIsotherm.__init__(self, v_ca_a, i_c_a , c_ca_a , T)
         # TODO Ensure reasonable results for I_S temperature coefficient.
-        # self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a, 
+        # self.i_s_temp_coeff = i_s_temp_dependence_model(T_i_s_a,
         #                                                 i_s_temp_a)
         # self.params['i_s_temp_coeff'] = self.i_s_temp_coeff
-        
+
     def calc_i_s_temp_a(self, T_lower = 250, T_upper = 450):
         T_a = np.linspace(T_lower, T_upper, num=100)
         i_s_a = np.zeros(len(T_a))
@@ -175,7 +175,7 @@ def diode_model_params_isotherm(v_ca_a, i_c_a , c_ca_a , T):
                     'vca_lim_upper_r': vca_lim_upper_r,
                     }
     return model_params
-    
+
 
 def i_s_temp_dependence_model(T_i_s_a, i_s_temp_a ):
     """Determine temperature dependence of diode saturation currrent.
