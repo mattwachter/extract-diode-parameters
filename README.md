@@ -50,6 +50,7 @@ I_D = I_S * (exp(V_D/m*V_T)-1)
 ```
 
 With the thermal voltage `V_T = kT/q`.
+
 All of the diode equations that form the basis of the model used for this project are listed on slide 5 ("Grundgleichungen") of `DiodenModellparameterExtrahieren_pres.pdf`.
 This slide also shows the equivalent circuit.
 
