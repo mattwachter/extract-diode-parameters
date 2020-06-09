@@ -173,9 +173,11 @@ def diode_capacitance_model(v_ca_a , i_c_a , c_ca_a , vca_lim_lower=0.65,
 def diode_saturation_current(i_s_0, T):
     """Temperature dependent saturation current.
 
-    As described by Michael Schroter in hicumL2V2p4p0_internal.va
+    As described by Michael Schroter in the HICUM Model:
+    https://www.iee.et.tu-dresden.de/iee/eb/forsch/Hicum_PD/HicumQ/hicumL2V2p4p0.va
     (line 1150) for an internal Base collector diode saturation current:
     ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1))
+
     Args:
         i_s_0 (float): I_S [A] at T=300.15K.
         T ([type]): Temperature [K].
@@ -194,16 +196,18 @@ def diode_saturation_current(i_s_0, T):
     qtt0 = T / T_nom
     ln_qtt0 = np.log(qtt0)
     # i_s = i_s_0 * np.exp(zetabci * ln_qtt0 + vgc/VT * (qtt0-1))
-    i_s = i_s_0 * np.exp(zetabci * ln_qtt0) * np.exp(vgc/VT * (qtt0-1))
-    i_s = i_s_0 * np.exp(vgc/VT * (qtt0-1))     # Better results
+    # Original
+    # i_s = i_s_0 * np.exp(zetabci * ln_qtt0) * np.exp(vgc/VT * (qtt0-1))
+    # Simplified version gets better results:
+    i_s = i_s_0 * np.exp(vgc/VT * (qtt0-1))
     return i_s
 
 
 def diode_saturation_current_log(i_s_0_log, T, zeta):
     """Log of temperature dependent saturation current.
 
-    Linear equation to be used for curve fitting.
-    As described by Michael Schroter in hicumL2V2p4p0_internal.va
+    As described by Michael Schroter in the HICUM Model:
+    https://www.iee.et.tu-dresden.de/iee/eb/forsch/Hicum_PD/HicumQ/hicumL2V2p4p0.va
     (line 1150) for an internal Base collector diode saturation current:
     ibcis_t = ibcis*exp(zetabci*ln_qtt0+vgc/VT*(qtt0-1))
     Args:
