@@ -3,3 +3,4 @@
 __pycache__
 model.json
 file_names-custom.json
+.pytest_cache
