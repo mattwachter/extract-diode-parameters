@@ -1,13 +1,16 @@
 # Automated extraction of diode model parameters
 
+Extract model parameters from measurements of diode current, voltage and capacitance at different temperatures.
+The model parameters can be used in an equivalent circuit. 
+Plotting of measurement data and simulated diode behavior is also supported.
+
 This project was developed for the seminar
 [Hauptseminar Mikro-und Nanoelektronik](https://www.iee.et.tu-dresden.de/iee/eb/lehre/lv/lak/MIK_NANO_ET_lak.html) at TU Dresden by Matthias von Wachter.
-It aims to automate the extraction of diode model parameters.
 
 
 ## Getting started
 
-No actual installation required.
+No actual installation is required.
 Just clone the repo
 
 ```bash
